@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+crimewatch_audit.log
+
+# Data Handling
+# We ignore the heavy raw data to stay under GitHub's 100MB limit
+data/raw/
+!data/raw/README.md
+
+# IMPORTANT: We DO NOT ignore data/processed/ 
+# Streamlit needs the files in data/processed/ to run the app!
+# If you had "data/processed/*.csv" here before, REMOVE IT.
+
+# Environment & Secrets
+.env
+*.env
+.streamlit/secrets.toml
+
+# Streamlit temporary files
+*.pyc
+.streamlit/config.toml
