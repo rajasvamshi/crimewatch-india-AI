@@ -87,30 +87,22 @@ Filter and explore crime data by:
 ## 🏗 Architecture
 
 ```mermaid
-…        D3[Forecasting]
+graph TD
+    A[Raw NCRB-style Crime Data] --> B[Data Processing Pipeline]
+    B --> C[Feature Engineering]
+    C --> D[Risk/Forecast Analytics Engines]
+    D --> E[Streamlit Intelligence Dashboard]
+    E --> F[Interactive Visualization & Decision Support]
+    
+    subgraph "Analytics Engines"
+        D1[Risk Scoring]
+        D2[Early Warning]
+        D3[Forecasting]
         D4[Anomaly Detection]
         D5[Clustering]
     end
     
     D --> D1 & D2 & D3 & D4 & D5
-
-Architecture
-
-Raw NCRB-style Crime Data
-        ↓
-Data Processing Pipeline (schema normalization, cleaning)
-        ↓
-Feature Engineering (YoY growth, volatility, risk scores)
-        ↓
-Analytics Engines:
-  • Risk Scoring (Volume + Growth + Volatility)
-  • Early Warning (Rule-based + IsolationForest)
-  • Forecasting (ARIMA/Linear with fallback)
-  • Clustering (KMeans/DBSCAN geo-hotspots)
-        ↓
-Streamlit Intelligence Dashboard (15 interactive tabs)
-        ↓
-Interactive Visualization & Decision Support
 
 📁 Project Structure
 crimewatch-india-AI/
