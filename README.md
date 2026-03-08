@@ -83,7 +83,6 @@ Filter and explore crime data by:
 
 ---
 
-```
 ## 🏗 Architecture
 
 ```mermaid
@@ -93,18 +92,25 @@ graph TD
     C --> D[Risk/Forecast Analytics Engines]
     D --> E[Streamlit Intelligence Dashboard]
     E --> F[Interactive Visualization & Decision Support]
-    
-    subgraph "Analytics Engines"
+
+    subgraph Analytics_Engines
         D1[Risk Scoring]
         D2[Early Warning]
         D3[Forecasting]
         D4[Anomaly Detection]
         D5[Clustering]
     end
-    
-    D --> D1 & D2 & D3 & D4 & D5
 
-📁 Project Structure
+    D --> D1
+    D --> D2
+    D --> D3
+    D --> D4
+    D --> D5
+```
+
+## 📁 Project Structure
+
+```text
 crimewatch-india-AI/
 │
 ├── app/
@@ -118,196 +124,313 @@ crimewatch-india-AI/
 │   └── raw/                  # Source NCRB-style CSVs
 │
 ├── src/
-│   ├── build_master_dataset.py       # Legacy preprocessing
-│   ├── build_master_dataset_v2.py    # Current preprocessing pipeline
-│   ├── config.py                     # Configuration constants
-│   └── data_loader.py                # Data loading utilities
+│   ├── build_master_dataset.py
+│   ├── build_master_dataset_v2.py
+│   ├── config.py
+│   └── data_loader.py
 │
 ├── notebooks/
-│   └── 01_exploration_india.ipynb    # Exploratory data analysis
+│   └── 01_exploration_india.ipynb
 │
-├── Dockerfile                  # Containerization config
-├── requirements.txt            # Python dependencies
-├── README.md                   # This file
-├── LICENSE                     # MIT License
-├── ETHICAL_USE.md              # Ethical use policy
-└── .gitignore                  # Git ignore rules
+├── Dockerfile
+├── requirements.txt
+├── README.md
+├── LICENSE
+├── ETHICAL_USE.md
+└── .gitignore
+```
 
-🚀 Installation
-Prerequisites
-Python 3.10 or higher
-pip (Python package manager)
-Git
-Step-by-Step Setup
+## 🚀 Installation
 
-1. Clone the repository
+### Prerequisites
+
+Make sure the following tools are installed:
+
+- **Python 3.10 or higher**
+- **pip** (Python package manager)
+- **Git**
+
+---
+
+### Step-by-Step Setup
+
+#### 1️⃣ Clone the Repository
+
+```bash
 git clone https://github.com/rajasvamshi/crimewatch-india-AI.git
 cd crimewatch-india-AI
+```
 
-2.Create a virtual environment
+---
+
+#### 2️⃣ Create a Virtual Environment
+
+**Windows**
+
+```bash
 python -m venv .venv
-# On Windows:
 .venv\Scripts\activate
-# On macOS/Linux:
+```
+
+**macOS / Linux**
+
+```bash
+python -m venv .venv
 source .venv/bin/activate
+```
 
-3.Install dependencies
+---
+
+#### 3️⃣ Install Dependencies
+
+```bash
 pip install -r requirements.txt
+```
 
-4.Run the Streamlit app
+---
+
+#### 4️⃣ Run the Streamlit Application
+
+```bash
 streamlit run app/dashboard.py
+```
 
-5.Open your browser
+---
+
+#### 5️⃣ Open the Application in Your Browser
+
+```
 http://localhost:8501
+```
 
-🎮 Usage
+Once launched, the **CrimeWatch AI dashboard** will automatically open in your browser.
 
-Getting Started
-Launch the dashboard using the installation steps above
-Use the Control Panel to filter by year, state, district, or crime category
-Explore the 15 interactive tabs:
+---
 
-📌 Overview: Temporal trends and category breakdown
-🔥 Hotspots & Risk: Risk-scoring table with drill-down
-🎯 Drilldown: State → District → Category → Crime Type navigation
-🧊 Heatmaps: District×Year and District×Category concentration
-📈 Forecast: ARIMA/Linear forecasting with confidence intervals
-🚨 Early Warning: Spike detection and anomaly flags
-🚓 Patrol Plan: Resource-constrained unit allocation
-🛡️ Prevention Strategy: Category-specific recommendations
-🧠 Risk Prediction: Supervised ML model (RandomForest/XGBoost)
-🧪 Model Governance: Forecast metrics, drift checks, fairness proxies
-⚖️ Ethical Auditor: Compliance notices and bias checks
-📝 Executive Report: Auto-generated Markdown report
-🗺️ Map & Clusters: Geo-clustering with KMeans/DBSCAN
-📂 Data & Export: Data preview with guarded export
+# 🎮 Usage
 
-Tips
-Toggle Live Pulse to simulate streaming feed fluctuations
-Adjust AI Sensitivity to control anomaly detection thresholds
-Use Quick Filter Presets for common time ranges
-Download reports via the Executive Report or Data & Export tabs
+## Getting Started
 
-📊 Dataset
-Source
-The dataset represents aggregated crime statistics across Indian states and districts, derived from publicly available reporting sources (NCRB-style schema).
-Schema
-Column
-Type
-Description
-year
-int
-Observation year (2017-2022)
-state_name
-str
-State/UT name
-district_name
-str
-District name
-category
-str
-Crime category (10 canonical types)
-crime_type
-str
-Aggregated type (Property/Violent/Special/Other)
-crime_count
-int
-Number of reported incidents
-arrests
-int
-Number of arrests (derived)
-lat, lon
-float
-Geographic coordinates (for visualization)
-Coverage
-30 States/UTs (29 states + Delhi)
-766+ Districts (canonical mapping)
-10 Crime Categories (Theft, Assault, Cyber Crime, etc.)
-6 Years of temporal data (2017-2022)
+1. Launch the dashboard using the installation steps above.
+2. Use the **Control Panel** to filter the dataset by:
+   - Year range
+   - State
+   - District
+   - Crime category
+3. Explore the **interactive analytics modules** available in the dashboard.
 
-⚠️ Note: This demo uses synthetic data for portability. For production use, connect to validated NCRB data pipelines.
+---
 
-⚖️ Ethical Disclaimer
+## 📊 Dashboard Modules
 
-This project is intended strictly for analytical, educational, and demonstration purposes.
-Intended Uses ✅
-Research on crime analytics methodologies
-Educational demonstrations of AI/ML in public safety
-Policy analysis and scenario planning (with validated data)
-Technology prototyping and stakeholder engagement
-Prohibited Uses ❌
-Individual-level predictions or targeting
-Fully automated enforcement actions without human review
-Profiling based on protected characteristics (caste, religion, gender, ethnicity)
-Operational policing decisions without official data governance and validation
-Required Safeguards
-Human-in-the-loop review for all CRITICAL-risk flags
-Quarterly drift/fairness audits for production deployments
-Public transparency reporting (anonymized where applicable)
-Cross-verification with local authorities before operational use
-See ETHICAL_USE.md for the complete ethical use policy.
+The platform includes multiple intelligence and analytics panels:
 
-🚀 Future Improvements
+| Module | Description |
+|------|------|
+| 📌 Overview | Temporal trends and category breakdown |
+| 🔥 Hotspots & Risk | Risk-scoring table with district drill-down |
+| 🎯 Drilldown | Navigate **State → District → Category → Crime Type** |
+| 🧊 Heatmaps | District × Year and District × Category concentration |
+| 📈 Forecast | ARIMA / Linear forecasting with confidence intervals |
+| 🚨 Early Warning | Spike detection and anomaly flags |
+| 🚓 Patrol Plan | Resource-constrained patrol unit allocation |
+| 🛡️ Prevention Strategy | Crime-category specific recommendations |
+| 🧠 Risk Prediction | Supervised ML model (RandomForest / XGBoost) |
+| 🧪 Model Governance | Forecast metrics, drift monitoring, fairness checks |
+| ⚖️ Ethical Auditor | Compliance notices and bias safeguards |
+| 📝 Executive Report | Auto-generated markdown intelligence reports |
+| 🗺️ Map & Clusters | Geo-clustering using KMeans / DBSCAN |
+| 📂 Data & Export | Dataset preview with guarded export functionality |
+
+---
+
+## 💡 Usage Tips
+
+- Toggle **Live Pulse** to simulate streaming data fluctuations  
+- Adjust **AI Sensitivity** to tune anomaly detection thresholds  
+- Use **Quick Filter Presets** for common time ranges  
+- Generate reports using the **Executive Report** tab  
+
+---
+
+# 📊 Dataset
+
+## Source
+
+The dataset represents **aggregated crime statistics across Indian states and districts**, inspired by publicly available **NCRB-style crime reporting schemas**.
+
+---
+
+## Dataset Schema
+
+| Column | Type | Description |
+|------|------|------|
+| year | int | Observation year (2017–2022) |
+| state_name | str | State / Union Territory name |
+| district_name | str | District name |
+| category | str | Crime category |
+| crime_type | str | Aggregated type (Property / Violent / Special / Other) |
+| crime_count | int | Number of reported incidents |
+| arrests | int | Number of arrests (derived feature) |
+| lat | float | Latitude coordinate |
+| lon | float | Longitude coordinate |
+
+---
+
+## Dataset Coverage
+
+- **30 States / Union Territories** (29 states + Delhi)
+- **766+ Districts**
+- **10 Crime Categories**
+- **6 Years of data (2017–2022)**
+
+⚠️ **Note**
+
+This demo uses **synthetic data for portability**.
+
+Production deployments should integrate **validated NCRB datasets and official crime reporting pipelines**.
+
+---
+
+# ⚖️ Ethical Disclaimer
+
+This project is intended strictly for **analytical, educational, and demonstration purposes**.
+
+---
+
+## ✅ Intended Uses
+
+- Research on crime analytics methodologies
+- Educational demonstrations of AI/ML in public safety
+- Policy analysis and scenario planning
+- Technology prototyping for decision-support systems
+
+---
+
+## ❌ Prohibited Uses
+
+- Individual-level predictions or targeting
+- Fully automated enforcement decisions
+- Profiling based on protected characteristics (caste, religion, gender, ethnicity)
+- Operational policing decisions without governance oversight
+
+---
+
+## Required Safeguards
+
+Responsible deployments should include:
+
+- **Human-in-the-loop review** for all CRITICAL-risk alerts
+- **Quarterly drift and fairness audits**
+- **Transparency reporting**
+- **Cross-verification with local authorities**
+
+See **ETHICAL_USE.md** for the complete ethical policy.
+
+---
+
+# 🚀 Future Improvements
+
 Planned enhancements include:
-Geospatial Crime Heatmaps: Interactive choropleth maps with real-time updates
-Advanced Forecasting: Prophet, LSTM, or spatiotemporal models for seasonality
-Per-Capita Normalization: Population-adjusted risk scores for fairer comparisons
-Multi-Year Anomaly Detection: Temporal pattern recognition across longer horizons
-User Authentication: Role-based access (Analyst/Commander/Admin)
-Database Integration: PostgreSQL/MongoDB for persistent storage and scaling
-API Endpoints: FastAPI wrapper for external system integration
-Mobile-Responsive UI: Optimized views for tablet/field commander use
 
-🤝 Contributing
-Contributions are welcome! Here's how to get started:
-Fork the repository
-Create a feature branch: git checkout -b feature/amazing-feature
-Commit your changes: git commit -m 'Add amazing feature'
-Push to the branch: git push origin feature/amazing-feature
-Open a Pull Request
-Development Guidelines
-Follow PEP 8 style guidelines for Python code
-Add docstrings to new functions and classes
-Include tests for new features (if applicable)
-Update documentation for user-facing changes
-Issues & Feature Requests
-Use the GitHub Issues tab to report bugs or suggest features
-Search existing issues before creating a new one
-Provide clear steps to reproduce bugs
+### Advanced Analytics
+- Interactive geospatial crime heatmaps
+- Multi-year anomaly detection
+- Advanced forecasting models (Prophet, LSTM)
 
-📄 License
-This project is released under the MIT License. See the LICENSE file for details.
+### Infrastructure Improvements
+- Database integration (PostgreSQL / MongoDB)
+- FastAPI endpoints for external integrations
+- Real-time data ingestion pipelines
 
-MIT License
+### Platform Enhancements
+- Role-based user authentication
+- Mobile-responsive interface for field officers
+- Export to PDF / PowerPoint reports
 
-Copyright (c) 2025 Rajavamshi Samudrala
+---
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+# 🤝 Contributing
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Contributions are welcome.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+## Development Workflow
 
-👨‍💻 Author
+```bash
+git checkout -b feature/amazing-feature
+git commit -m "Add amazing feature"
+git push origin feature/amazing-feature
+```
+
+Then open a **Pull Request**.
+
+---
+
+## Development Guidelines
+
+- Follow **PEP8 coding standards**
+- Add **docstrings** to new functions and classes
+- Include tests for new features when applicable
+- Update documentation for user-facing changes
+
+---
+
+## Issues & Feature Requests
+
+Use the **GitHub Issues** tab to:
+
+- Report bugs
+- Suggest features
+- Propose improvements
+
+Before opening a new issue, check if it already exists.
+
+---
+
+# 📄 License
+
+This project is released under the **MIT License**.
+
+---
+
+### MIT License
+
+Copyright (c) 2026 Rajavamshi Samudrala
+
+Permission is hereby granted, free of charge, to any person obtaining a copy  
+of this software and associated documentation files (the "Software"), to deal  
+in the Software without restriction, including without limitation the rights  
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell  
+copies of the Software.
+
+The above copyright notice and this permission notice shall be included in  
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+
+---
+
+# 👨‍💻 Author
+
+**Rajavamshi Samudrala**
+
+GitHub  
+https://github.com/rajasvamshi
+
+LinkedIn  
 Rajavamshi Samudrala
-🔗 GitHub 
-🔗 LinkedIn - RAJAVAMSHI SAMUDRALA
-✉️ Email- rajasvamshi@gmail.com
-🙏 Acknowledgments
-National Crime Records Bureau (NCRB) for open data inspiration
-Streamlit community for the amazing framework
-Plotly for interactive visualization capabilities
-Scikit-learn, Statsmodels, and XGBoost for ML capabilities
-Open-source contributors whose libraries made this project possible
+
+Email  
+rajasvamshi@gmail.com
+
+---
+
+# 🙏 Acknowledgments
+
+Special thanks to:
+
+- **National Crime Records Bureau (NCRB)** for open data inspiration  
+- **Streamlit** for the dashboard framework  
+- **Plotly** for interactive visualizations  
+- **Scikit-learn, Statsmodels, and XGBoost** for machine learning capabilities  
+- The **open-source community** whose tools made this project possible
