@@ -83,7 +83,7 @@ Filter and explore crime data by:
 
 ---
 
-```markdown
+```
 ## 🏗 Architecture
 
 ```mermaid
