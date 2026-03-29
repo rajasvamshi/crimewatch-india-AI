@@ -1,264 +1,300 @@
+# D:\crimewatch\src\build_master_dataset_v2.py
 from __future__ import annotations
 
-from pathlib import Path
+import os
 import re
+import glob
+from pathlib import Path
 import pandas as pd
-import numpy as np
 
 
-# ============================================================
+# =========================
 # CONFIG
-# ============================================================
-PROJECT_ROOT = Path(__file__).resolve().parents[1]   # D:\crimewatch
+# =========================
+PROJECT_ROOT = Path(__file__).resolve().parents[1]   # .../crimewatch
 RAW_DIR = PROJECT_ROOT / "data" / "raw"
 OUT_DIR = PROJECT_ROOT / "data" / "processed"
-OUT_DIR.mkdir(parents=True, exist_ok=True)
+OUTPUT_FILE = OUT_DIR / "master_crime_long.csv"
 
-MASTER_OUT = OUT_DIR / "master_crime_long.csv"
-
-# Columns that are NOT crime measures (must never be melted into crime_type)
-# Add more here if your raw files have other technical columns.
-NON_MEASURE_COLS = {
-    "id", "Id", "ID",
-    "unnamed: 0", "Unnamed: 0", "Unnamed:0", "unnamed:0",
-    "index",
-    # typical dimensions
-    "year",
-    "state_name", "state", "state_ut", "state/ut", "state_ut_name",
-    "state_code",
-    "district_name", "district",
-    "district_code",
-    "registration_circles", "registration_circle", "registration circle",
-    "category",
-    "source_file",
-}
-
-# Output schema columns
-OUT_COLS = [
+# Identity columns that should NEVER become crime_type
+# (We will keep only those that exist in each file.)
+ID_COLS = [
     "year",
     "state_name", "state_code",
     "district_name", "district_code",
     "registration_circles",
-    "crime_type",
-    "crime_count",
-    "category",
-    "source_file",
 ]
 
+# Columns that are NOT crimes even if present (must be excluded from melt)
+# This is where "id" gets blocked.
+NON_CRIME_COLS = set([
+    "id", "index", "unnamed: 0", "s_no", "s.no", "sr_no", "sr.no",
+    "total", "grand_total", "remarks", "note", "notes",
+])
 
-# ============================================================
+# Columns that often exist but are metadata, not crime types
+META_COL_HINTS = [
+    "code", "name", "circle", "registration", "police",
+    "state", "district", "year",
+]
+
+# If a value column is ALL zeros or ALL NaN, we can drop it (optional)
+DROP_ALL_ZERO_CRIME_TYPES = True
+
+
+# =========================
 # HELPERS
-# ============================================================
-def _clean_col(c: str) -> str:
+# =========================
+def norm_col(c: str) -> str:
+    """Normalize column names to snake_case-ish lower for matching."""
     c = str(c).strip()
-    c = re.sub(r"\s+", " ", c)
+    c = re.sub(r"\s+", "_", c)
+    c = c.replace("-", "_").replace("/", "_")
+    c = c.lower()
     return c
 
-def _lower_col(c: str) -> str:
-    return _clean_col(c).lower()
 
-def _standardize_columns(df: pd.DataFrame) -> pd.DataFrame:
-    # keep original cols but also build lowercase mapping
-    df = df.copy()
-    df.columns = [_clean_col(c) for c in df.columns]
+def detect_category(file_path: str) -> str:
+    """Category from filename (robust)."""
+    name = os.path.basename(file_path).lower()
+    if "women" in name:
+        return "crime_against_women"
+    if "children" in name:
+        return "crime_against_children"
+    if "cyber" in name:
+        return "cyber_crime"
+    if "juvenile" in name:
+        return "ipc_by_juveniles"
+    if "missing" in name:
+        return "missing_persons"
+    if "sll" in name:
+        return "sll_crimes"
+    if "ipc" in name:
+        return "ipc_total"
+    # SC/ST files vary: "sc", "sts", "st", etc.
+    if "sc" in name and "st" in name:
+        return "crime_against_sc_st"
+    if "sc" in name:
+        return "crime_against_sc"
+    if "sts" in name or "st" in name:
+        return "crime_against_st"
+    return "unknown"
+
+
+def is_likely_id_col(col_norm: str) -> bool:
+    """Exclude obvious non-crime columns from melt."""
+    if col_norm in NON_CRIME_COLS:
+        return True
+    # Unnamed columns from CSV exports
+    if col_norm.startswith("unnamed"):
+        return True
+    # Anything that looks like an ID/key column
+    if col_norm in ("gid", "uuid", "pk"):
+        return True
+    # If it contains typical metadata hints and is short/identifier-like
+    if any(h in col_norm for h in META_COL_HINTS) and col_norm in (
+        "state", "district", "year", "state_code", "district_code", "registration_circles"
+    ):
+        return True
+    return False
+
+
+def coerce_standard_schema(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Make column names consistent without losing information.
+    We try to map common variations to the expected ID_COLS names.
+    """
+    # Normalize columns for matching
+    original_cols = list(df.columns)
+    colmap = {c: norm_col(c) for c in original_cols}
+
+    # Reverse index: normalized -> original
+    norm_to_orig = {}
+    for orig, n in colmap.items():
+        norm_to_orig.setdefault(n, []).append(orig)
+
+    # Build rename mapping for known keys
+    rename = {}
+
+    # year
+    for cand in ["year", "yr"]:
+        if cand in norm_to_orig:
+            rename[norm_to_orig[cand][0]] = "year"
+            break
+
+    # state_name
+    for cand in ["state_name", "state", "state_ut", "state_ut_name", "state/ut"]:
+        if cand in norm_to_orig:
+            rename[norm_to_orig[cand][0]] = "state_name"
+            break
+
+    # state_code
+    for cand in ["state_code", "st_code", "statecd", "state_id"]:
+        if cand in norm_to_orig:
+            rename[norm_to_orig[cand][0]] = "state_code"
+            break
+
+    # district_name
+    for cand in ["district_name", "district", "district_name_", "dist_name", "district/area"]:
+        if cand in norm_to_orig:
+            rename[norm_to_orig[cand][0]] = "district_name"
+            break
+
+    # district_code
+    for cand in ["district_code", "dist_code", "districtcd", "district_id"]:
+        if cand in norm_to_orig:
+            rename[norm_to_orig[cand][0]] = "district_code"
+            break
+
+    # registration_circles
+    for cand in ["registration_circles", "registration_circle", "circle", "reg_circles", "registrationcircles"]:
+        if cand in norm_to_orig:
+            rename[norm_to_orig[cand][0]] = "registration_circles"
+            break
+
+    df = df.rename(columns=rename)
     return df
 
-def _find_first_existing(col_candidates: list[str], cols_lower: list[str]) -> str | None:
-    """Return the actual column name in df (original casing) that matches any candidate (case-insensitive)."""
-    lower_map = {c.lower(): c for c in cols_lower}  # cols_lower is already original list; we map lower->original
-    for cand in col_candidates:
-        key = cand.lower()
-        if key in lower_map:
-            return lower_map[key]
-    return None
 
-def _coerce_year(s: pd.Series) -> pd.Series:
-    y = pd.to_numeric(s, errors="coerce")
-    return y
+def pick_id_cols(df: pd.DataFrame) -> list[str]:
+    """Keep only ID_COLS that exist in df."""
+    return [c for c in ID_COLS if c in df.columns]
 
-def _safe_read_csv(path: Path) -> pd.DataFrame:
-    # Many NCRB CSVs are clean with default encoding; if one fails, fallback.
-    try:
-        return pd.read_csv(path)
-    except UnicodeDecodeError:
-        return pd.read_csv(path, encoding="latin-1")
 
-def _pick_measure_columns(df: pd.DataFrame) -> list[str]:
-    """
-    Choose crime measure columns:
-    - numeric-ish columns
-    - excluding NON_MEASURE_COLS (case-insensitive)
-    """
-    cols = list(df.columns)
-    cols_lower = [_lower_col(c) for c in cols]
-    non_measure_lower = {_lower_col(c) for c in NON_MEASURE_COLS}
-
-    # Convert all possible numeric columns to numeric (temp) to detect measures
-    measure_cols = []
-    for c, cl in zip(cols, cols_lower):
-        if cl in non_measure_lower:
+def pick_value_cols(df: pd.DataFrame, id_cols_present: list[str]) -> list[str]:
+    """Crime columns = all columns except ID cols and obvious non-crime cols."""
+    crime_cols = []
+    for c in df.columns:
+        if c in id_cols_present:
             continue
-        # ignore obvious text fields
-        if cl in {"remarks", "note", "notes"}:
+        cn = norm_col(c)
+        if is_likely_id_col(cn):
             continue
+        crime_cols.append(c)
+    return crime_cols
 
-        # consider as measure if it becomes numeric for a decent fraction of rows
-        x = pd.to_numeric(df[c], errors="coerce")
-        non_na_ratio = x.notna().mean()
-        if non_na_ratio >= 0.25:  # threshold; works well for NCRB wide tables
-            measure_cols.append(c)
 
-    # If nothing detected, fallback: all columns except non-measures
-    if not measure_cols:
-        measure_cols = [c for c, cl in zip(cols, cols_lower) if cl not in non_measure_lower]
+def load_and_melt(file_path: str) -> pd.DataFrame:
+    df = pd.read_csv(file_path)
 
-    # Hard-remove any technical columns even if numeric (like id, unnamed)
-    banned = {"id", "unnamed: 0", "unnamed:0", "index"}
-    measure_cols = [c for c in measure_cols if _lower_col(c) not in banned]
+    # Standardize schema (best-effort)
+    df = coerce_standard_schema(df)
 
-    return measure_cols
+    id_cols = pick_id_cols(df)
 
-def _process_one_file(path: Path, category: str) -> pd.DataFrame:
-    df = _safe_read_csv(path)
-    df = _standardize_columns(df)
+    # Must have at least year/state/district to be useful
+    required_min = {"year", "state_name", "district_name"}
+    if not required_min.issubset(set(df.columns)):
+        # Skip files that don't match expected district-level format
+        missing = required_min - set(df.columns)
+        print(f"⚠️ Skipping {os.path.basename(file_path)} (missing {missing})")
+        return pd.DataFrame()
 
-    cols = list(df.columns)
-    cols_lower = [c for c in cols]  # we map using lower inside finder
+    crime_cols = pick_value_cols(df, id_cols)
 
-    # Detect dimension columns
-    col_year = _find_first_existing(["year"], cols)
-    col_state = _find_first_existing(["state_name", "state", "state/ut", "state_ut", "state_ut_name"], cols)
-    col_state_code = _find_first_existing(["state_code"], cols)
-    col_dist = _find_first_existing(["district_name", "district"], cols)
-    col_dist_code = _find_first_existing(["district_code"], cols)
-    col_reg = _find_first_existing(["registration_circles", "registration_circle", "registration circle"], cols)
+    if not crime_cols:
+        print(f"⚠️ Skipping {os.path.basename(file_path)} (no crime columns after filtering)")
+        return pd.DataFrame()
 
-    # Basic required dims for your dashboard
-    required = [col_year, col_state, col_dist]
-    if any(x is None for x in required):
-        missing = []
-        if col_year is None: missing.append("year")
-        if col_state is None: missing.append("state_name/state")
-        if col_dist is None: missing.append("district_name/district")
-        raise ValueError(f"[{path.name}] missing required dimension columns: {missing}. Found: {cols}")
-
-    # Ensure these exist (create if missing)
-    if col_state_code is None:
-        df["state_code"] = np.nan
-        col_state_code = "state_code"
-    if col_dist_code is None:
-        df["district_code"] = np.nan
-        col_dist_code = "district_code"
-    if col_reg is None:
-        df["registration_circles"] = ""
-        col_reg = "registration_circles"
-
-    # Identify measure columns safely (THIS is where id gets excluded)
-    measure_cols = _pick_measure_columns(df)
-
-    # Convert year + measures
-    df[col_year] = _coerce_year(df[col_year])
-    df = df.dropna(subset=[col_year])
-    df[col_year] = df[col_year].astype(int)
-
-    for m in measure_cols:
-        df[m] = pd.to_numeric(df[m], errors="coerce").fillna(0.0)
-
-    # Melt to long
-    long_df = df.melt(
-        id_vars=[col_year, col_state, col_state_code, col_dist, col_dist_code, col_reg],
-        value_vars=measure_cols,
+    df_long = df.melt(
+        id_vars=id_cols,
+        value_vars=crime_cols,
         var_name="crime_type",
         value_name="crime_count",
-    )
-
-    # Add metadata
-    long_df["category"] = category
-    long_df["source_file"] = path.name
-
-    # Rename to standard schema
-    long_df = long_df.rename(columns={
-        col_year: "year",
-        col_state: "state_name",
-        col_state_code: "state_code",
-        col_dist: "district_name",
-        col_dist_code: "district_code",
-        col_reg: "registration_circles",
-    })
-
-    # FINAL HARD FILTER: never allow "id"/unnamed to appear
-    bad_types = {"id", "unnamed: 0", "unnamed:0", "index"}
-    long_df = long_df[~long_df["crime_type"].astype(str).str.strip().str.lower().isin(bad_types)].copy()
+    ).reset_index(drop=True)
 
     # Clean types
-    long_df["crime_type"] = long_df["crime_type"].astype(str).str.strip()
-    long_df["crime_count"] = pd.to_numeric(long_df["crime_count"], errors="coerce").fillna(0.0)
-    long_df = long_df[long_df["crime_count"] >= 0]
+    df_long["crime_type"] = df_long["crime_type"].astype(str).str.strip()
+    df_long["crime_count"] = pd.to_numeric(df_long["crime_count"], errors="coerce").fillna(0.0)
 
-    # Keep only output columns
-    for c in OUT_COLS:
-        if c not in long_df.columns:
-            long_df[c] = "" if c not in {"year", "crime_count"} else 0
+    # HARD BLOCK: ensure crime_type never equals "id"
+    df_long = df_long[df_long["crime_type"].str.lower() != "id"].reset_index(drop=True)
 
-    return long_df[OUT_COLS].copy()
+    # Add metadata
+    df_long["category"] = detect_category(file_path)
+    df_long["source_file"] = os.path.basename(file_path)
+
+    # Optional: drop crime types that are entirely zero in this file
+    if DROP_ALL_ZERO_CRIME_TYPES:
+        sums = df_long.groupby("crime_type")["crime_count"].sum()
+        keep_types = sums[sums > 0].index
+        df_long = df_long[df_long["crime_type"].isin(keep_types)].reset_index(drop=True)
+
+    return df_long
 
 
-# ============================================================
-# MAIN: build master dataset
-# ============================================================
-def main() -> None:
-    if not RAW_DIR.exists():
-        raise FileNotFoundError(f"Raw data folder not found: {RAW_DIR}")
+def data_quality_checks(master: pd.DataFrame) -> None:
+    """Fail fast if dataset quality is broken."""
+    required = {"year", "state_name", "district_name", "crime_type", "crime_count", "category", "source_file"}
+    missing = required - set(master.columns)
+    if missing:
+        raise ValueError(f"MASTER missing required columns: {missing}")
 
-    # You can keep a manual map if you want.
-    # This auto approach is faster + avoids file-not-found errors:
-    # category is inferred from filename.
-    raw_files = sorted([p for p in RAW_DIR.glob("*.csv") if p.is_file()])
+    # year numeric
+    master["year"] = pd.to_numeric(master["year"], errors="coerce")
+    if master["year"].isna().any():
+        raise ValueError("Some rows have invalid year after coercion.")
 
-    if not raw_files:
-        raise FileNotFoundError(f"No CSV files found in: {RAW_DIR}")
+    # crime_count numeric + non-negative
+    master["crime_count"] = pd.to_numeric(master["crime_count"], errors="coerce").fillna(0.0)
+    if (master["crime_count"] < 0).any():
+        raise ValueError("Found negative crime_count values (invalid).")
 
-    frames: list[pd.DataFrame] = []
-    skipped: list[str] = []
+    # THE KEY CHECK YOU ASKED ABOUT:
+    bad = set(master["crime_type"].astype(str).str.lower().unique())
+    assert "id" not in bad, (
+        "DATA QUALITY ERROR: 'id' found in crime_type. "
+        "This indicates a parsing/melt issue. Fix ETL before dashboard."
+    )
 
-    for f in raw_files:
-        # infer category from filename (your files already include meaningful names)
-        # example: districtwise-crime-against-children-2017-onwards.csv -> crime_against_children
-        name = f.stem.lower()
+    # sanity: avoid empty dataset
+    if len(master) == 0:
+        raise ValueError("MASTER is empty after processing. Check raw files.")
 
-        # basic cleanup
-        name = name.replace("districtwise-", "").replace("districtwise_", "")
-        name = name.replace("-2017-onwards", "").replace("_2017_onwards", "")
-        name = name.replace("-2017-2020", "").replace("_2017_2020", "")
-        name = re.sub(r"[^a-z0-9]+", "_", name).strip("_")
+    # sanity: must have some categories
+    if master["category"].nunique() < 2:
+        print("⚠️ Warning: Only 1 category detected. Verify filenames/category detection.")
 
-        category = name if name else "unknown"
 
-        try:
-            frames.append(_process_one_file(f, category=category))
-            print(f"OK  | {f.name} -> category={category} | rows={len(frames[-1]):,}")
-        except Exception as e:
-            skipped.append(f"{f.name}: {e}")
-            print(f"SKIP| {f.name} -> {e}")
+def build_master_dataset():
+    all_files = sorted(glob.glob(str(RAW_DIR / "*.csv")))
+    print(f"✅ Found {len(all_files)} raw CSV files in {RAW_DIR}")
+
+    frames = []
+    for fp in all_files:
+        print(f"Processing: {Path(fp).name}")
+        long_df = load_and_melt(fp)
+        if not long_df.empty:
+            frames.append(long_df)
 
     if not frames:
-        raise RuntimeError("No files were processed successfully. Check your raw CSV formats.")
+        raise RuntimeError("No valid CSVs produced long-format frames. Check your raw CSV folder/files.")
 
     master = pd.concat(frames, ignore_index=True)
 
-    # One more global guard: remove id/unnamed again (belt & suspenders)
-    master = master[~master["crime_type"].astype(str).str.strip().str.lower().isin({"id", "unnamed: 0", "unnamed:0", "index"})].copy()
+    # Normalize key fields
+    master["state_name"] = master["state_name"].astype(str).str.strip()
+    master["district_name"] = master["district_name"].astype(str).str.strip()
+    master["crime_type"] = master["crime_type"].astype(str).str.strip()
+    master["category"] = master["category"].astype(str).str.strip()
+
+    # Remove exact duplicates (safe)
+    master = master.drop_duplicates().reset_index(drop=True)
+
+    # Data quality gates
+    data_quality_checks(master)
 
     # Save
-    master.to_csv(MASTER_OUT, index=False)
-    print(f"\nDONE: {MASTER_OUT}")
-    print(f"Rows: {len(master):,} | Cols: {list(master.columns)}")
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    master.to_csv(OUTPUT_FILE, index=False)
 
-    if skipped:
-        print("\n--- Skipped files (non-fatal) ---")
-        for s in skipped:
-            print(s)
+    print(f"\n✅ MASTER DATASET CREATED: {OUTPUT_FILE}")
+    print(master.head())
+    print(f"\n✅ Rows: {master.shape[0]} | Columns: {master.shape[1]}")
+    print("✅ Unique categories:", master["category"].nunique())
+    print("✅ Year range:", int(master["year"].min()), "-", int(master["year"].max()))
+    print("✅ 'id' present in crime_type? ->", "id" in set(master["crime_type"].str.lower().unique()))
 
 
 if __name__ == "__main__":
-    main()
+    build_master_dataset()

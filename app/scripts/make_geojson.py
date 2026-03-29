@@ -1,6 +1,6 @@
 from pathlib import Path
 import json
-import shapefile  # pyshp
+import shapefile  # pip install pyshp
 
 
 def main():
@@ -17,7 +17,7 @@ def main():
 
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    print("✅ Reading shapefile (no geopandas)...")
+    print("✅ Reading shapefile (pyshp)...")
     r = shapefile.Reader(str(SHP_PATH), encoding="utf-8", errors="ignore")
 
     fields = [f[0] for f in r.fields[1:]]  # skip deletion flag
@@ -26,7 +26,7 @@ def main():
 
     st_index = fields.index("ST_NM")
 
-    # Collect all polygons grouped by state
+    # Collect geometries grouped by state
     state_geoms = {}
 
     for sr in r.shapeRecords():

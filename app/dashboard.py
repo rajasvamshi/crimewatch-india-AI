@@ -17,6 +17,7 @@ import plotly.graph_objects as go
 import streamlit as st
 from importlib.util import find_spec
 
+
 warnings.filterwarnings("ignore")
 
 DATASET_SCHEMA_VERSION = 4  # CHANGE: cache hardening (+1)
@@ -1651,40 +1652,67 @@ def forecast_arima_advanced(yearly: pd.DataFrame, years_ahead: int = 3) -> Tuple
     meta: Dict[str, Any] = {"model": "ARIMA (Advanced)", "status": "OK"}
     if yearly.empty or yearly["year"].nunique() < 4:
         return pd.DataFrame(), {**meta, "status": "INSUFFICIENT_DATA"}
-
-    # Import inside function (no try/except around import lines).
-    from statsmodels.tsa.arima.model import ARIMA
-
+    
+    # Check if statsmodels is available before importing
+    if not _has_module("statsmodels.tsa.arima.model"):
+        meta.update({"status": "FAILED", "error": "statsmodels not installed"})
+        return pd.DataFrame(), meta
+    
+    try:
+        import statsmodels.tsa.arima.model as arima_module
+        ARIMA = arima_module.ARIMA
+    except (ImportError, AttributeError) as ie:
+        meta.update({"status": "FAILED", "error": f"statsmodels import failed: {str(ie)[:200]}"})
+        return pd.DataFrame(), meta
+    
     y = yearly.sort_values("year").copy()
+    x = y["year"].astype(float).to_numpy()
     v = y["crime_count"].astype(float).to_numpy()
-
-    # ARIMA on values only; years provide alignment and display.
-    model = ARIMA(v, order=(1, 1, 1))
-    fit = model.fit()
-
-    # In-sample (levels) forecast for metrics: get fittedvalues are for differenced series; use predict
-    pred_in = fit.predict(start=0, end=len(v) - 1)
-    pred_in = np.maximum(0.0, np.asarray(pred_in, dtype=float))
-
-    mae = float(np.mean(np.abs(v - pred_in)))
-    mape = _safe_mape(v, pred_in)
-    aic = float(getattr(fit, "aic", np.nan))
-    bic = float(getattr(fit, "bic", np.nan))
-    meta.update({"mae": mae, "mape": mape, "aic": aic, "bic": bic})
-
-    last_year = int(y["year"].max())
-    future_years = list(range(last_year + 1, last_year + int(years_ahead) + 1))
-
-    fc = fit.get_forecast(steps=int(years_ahead))
-    mean = np.maximum(0.0, np.asarray(fc.predicted_mean, dtype=float))
-    ci = fc.conf_int(alpha=0.05)
-    # conf_int columns vary; assume [lower, upper]
-    lower = np.maximum(0.0, np.asarray(ci.iloc[:, 0], dtype=float))
-    upper = np.maximum(0.0, np.asarray(ci.iloc[:, 1], dtype=float))
-
-    fdf = pd.DataFrame({"year": future_years, "crime_count": mean, "lower": lower, "upper": upper, "type": "Forecast"})
-    meta.update({"ci": True})
-    return fdf, meta
+    
+    try:
+        # Fit ARIMA(1,1,1) - robust default
+        model = ARIMA(v, order=(1, 1, 1))
+        fit = model.fit()
+        
+        # In-sample predictions for quality metrics
+        pred_in = fit.fittedvalues
+        pred_in = np.maximum(0.0, np.asarray(pred_in, dtype=float))
+        mae = float(np.mean(np.abs(v - pred_in)))
+        mape = _safe_mape(v, pred_in)
+        aic = float(getattr(fit, "aic", np.nan))
+        bic = float(getattr(fit, "bic", np.nan))
+        meta.update({"mae": mae, "mape": mape, "aic": aic, "bic": bic})
+        
+        # Forecast
+        last_year = int(y["year"].max())
+        future_years = list(range(last_year + 1, last_year + int(years_ahead) + 1))
+        fc = fit.get_forecast(steps=int(years_ahead))
+        mean = np.maximum(0.0, np.asarray(fc.predicted_mean, dtype=float))
+        
+        # 🔧 FIX: Handle both DataFrame and ndarray from conf_int()
+        ci = fc.conf_int(alpha=0.05)
+        if isinstance(ci, np.ndarray):
+            # Newer statsmodels: returns ndarray
+            lower = np.maximum(0.0, ci[:, 0])
+            upper = np.maximum(0.0, ci[:, 1])
+        else:
+            # Older statsmodels: returns DataFrame
+            lower = np.maximum(0.0, np.asarray(ci.iloc[:, 0], dtype=float))
+            upper = np.maximum(0.0, np.asarray(ci.iloc[:, 1], dtype=float))
+        
+        fdf = pd.DataFrame({
+            "year": future_years,
+            "crime_count": mean,
+            "lower": lower,
+            "upper": upper,
+            "type": "Forecast"
+        })
+        meta.update({"ci": True})
+        return fdf, meta
+        
+    except Exception as e:
+        meta.update({"status": "FAILED", "error": str(e)[:200]})
+        return pd.DataFrame(), meta
 
 
 def run_forecast(yearly: pd.DataFrame, strategy: str, years_ahead: int) -> Tuple[pd.DataFrame, Dict[str, Any]]:
@@ -2036,25 +2064,60 @@ def train_risk_predictor(
     random_state: int = 42,
 ) -> Dict[str, Any]:
     """
-    Trains a supervised model to predict next-period risk bucket.
-    Shows accuracy + classification report + confusion matrix + feature importances.
+    Trains supervised model to predict next-period risk bucket.
+    ROBUST FIX: Handles any class distribution properly
     """
     result: Dict[str, Any] = {"status": "OK", "model_used": "None"}
 
     if X.empty or y.empty:
         return {**result, "status": "EMPTY"}
 
-    if y.nunique() < 2 or len(y) < 60:
+    # ✅ Step 1: Clean and encode labels
+    from sklearn.preprocessing import LabelEncoder
+    
+    # Clean labels - remove emojis and whitespace
+    y_clean = y.astype(str).str.strip()
+    y_clean = y_clean.str.replace(r'[🔴🟡🟢🟠]', '', regex=True).str.strip()
+    
+    # Map to numeric values
+    risk_mapping = {
+        "CRITICAL": 3,
+        "HIGH": 2,
+        "MEDIUM": 1,
+        "LOW": 0
+    }
+    
+    # Try mapping first
+    y_encoded = y_clean.map(risk_mapping)
+    
+    # Fallback: use LabelEncoder for any unmapped values
+    if y_encoded.isna().any():
+        unmapped = y_clean[y_encoded.isna()].unique()
+        le = LabelEncoder()
+        le.fit(unmapped)
+        y_encoded[y_encoded.isna()] = le.transform(y_clean[y_encoded.isna()])
+    
+    # Convert to int
+    y_encoded = y_encoded.astype(int)
+    
+    # ✅ Step 2: Check unique classes
+    unique_classes = sorted(y_encoded.unique().tolist())
+    n_classes = len(unique_classes)
+    
+    print(f"DEBUG: Unique classes in y: {unique_classes}")
+    print(f"DEBUG: Number of samples: {len(y_encoded)}")
+
+    if n_classes < 2 or len(y_encoded) < 60:
         return {
             **result,
             "status": "INSUFFICIENT_DATA",
-            "reason": f"Need >=60 samples and >=2 classes (have {len(y)} samples, {y.nunique()} classes).",
+            "reason": f"Need >=60 samples and >=2 classes (have {len(y_encoded)} samples, {n_classes} classes: {unique_classes}).",
         }
 
     if not _has_module("sklearn"):
         return {**result, "status": "SKLEARN_MISSING"}
 
-    # Import inside function (no try/except around import lines).
+    # ✅ Step 3: Import libraries
     from sklearn.model_selection import train_test_split
     from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
     from sklearn.ensemble import RandomForestClassifier
@@ -2064,16 +2127,29 @@ def train_risk_predictor(
     if model_preference in ("Auto", "XGBoost") and _has_module("xgboost"):
         use_xgb = True
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.22, random_state=int(random_state), stratify=y
-    )
+    # ✅ Step 4: Train/test split - NO stratify if insufficient classes
+    try:
+        if n_classes >= 2 and len(y_encoded) >= n_classes * 2:
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y_encoded, test_size=0.22, random_state=int(random_state), stratify=y_encoded
+            )
+        else:
+            # Fallback: no stratification
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y_encoded, test_size=0.22, random_state=int(random_state)
+            )
+    except Exception as e:
+        # Fallback: no stratification
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y_encoded, test_size=0.22, random_state=int(random_state)
+        )
 
+    # ✅ Step 5: Train model
     model = None
     model_used = "RandomForest"
+    
     if use_xgb:
-        # Import inside function (no try/except around import lines).
         from xgboost import XGBClassifier
-
         model_used = "XGBoost"
         model = XGBClassifier(
             n_estimators=400,
@@ -2101,12 +2177,16 @@ def train_risk_predictor(
 
     acc = float(accuracy_score(y_test, pred))
     report = classification_report(y_test, pred, output_dict=True, zero_division=0)
-    cm = confusion_matrix(y_test, pred, labels=sorted(y.unique().tolist()))
+    cm = confusion_matrix(y_test, pred, labels=unique_classes)
 
     # Feature importance
     importances = None
     if hasattr(model, "feature_importances_"):
         importances = np.asarray(getattr(model, "feature_importances_"), dtype=float)
+
+    # Create reverse mapping for display
+    reverse_mapping = {0: "LOW", 1: "MEDIUM", 2: "HIGH", 3: "CRITICAL"}
+    labels_display = [reverse_mapping.get(i, f"Class_{i}") for i in unique_classes]
 
     result.update(
         {
@@ -2114,10 +2194,13 @@ def train_risk_predictor(
             "model_used": model_used,
             "accuracy": acc,
             "report": report,
-            "labels": sorted(y.unique().tolist()),
+            "labels": labels_display,
             "confusion_matrix": cm,
             "feature_names": X.columns.tolist(),
             "feature_importances": importances,
+            "n_samples": len(y_encoded),
+            "n_classes": n_classes,
+            "classes": unique_classes,
         }
     )
     return result
@@ -2274,28 +2357,145 @@ def validate_export_request(filtered_df: pd.DataFrame, row_cap: int, guard_max_r
 # 🎛️ UI RENDERING
 # ============================================================
 def render_header() -> None:
-    st.markdown(
-        """
-        <div class="clean-header-container">
-          <div class="header-left">
-            <span class="ai-badge">🤖</span>
-            <div>
-              <div class="main-title">CrimeWatch AI • Sovereign Intelligence HUD</div>
-              <div class="subtitle">Futuristic Mission-Critical Intelligence Platform | Advanced Predictive Analytics</div>
+    """Render compact command center header."""
+    
+    st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap');
+    
+    .command-header {
+        background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(10, 10, 18, 0.95) 100%);
+        border: 2px solid rgba(56, 189, 248, 0.4);
+        border-radius: 4px;
+        padding: 16px 24px;
+        margin-bottom: 20px;
+        box-shadow: 
+            0 0 30px rgba(56, 189, 248, 0.15),
+            inset 0 0 40px rgba(56, 189, 248, 0.05),
+            0 8px 32px rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        position: relative;
+        overflow: visible;
+    }
+    
+    .command-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, 
+            transparent 0%, 
+            rgba(56, 189, 248, 0.8) 20%, 
+            rgba(56, 189, 248, 1) 50%, 
+            rgba(56, 189, 248, 0.8) 80%, 
+            transparent 100%
+        );
+        box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+    }
+    
+    .command-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .command-title-wrapper {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .command-title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: #ffffff;
+        font-family: 'Space Grotesk', sans-serif;
+        letter-spacing: 0.3px;
+        line-height: 1.3;
+        text-transform: uppercase;
+        text-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+        white-space: nowrap;
+    }
+    
+    .command-subtitle {
+        margin: 3px 0 0 0;
+        font-size: 9px;
+        color: #64748b;
+        font-family: 'IBM Plex Mono', monospace;
+        font-weight: 500;
+        letter-spacing: 1px;
+        line-height: 1.5;
+        text-transform: uppercase;
+    }
+    
+    .command-status {
+        background: rgba(34, 197, 94, 0.12);
+        border: 2px solid rgba(34, 197, 94, 0.6);
+        border-radius: 4px;
+        padding: 7px 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+        box-shadow: 
+            0 0 20px rgba(34, 197, 94, 0.3),
+            inset 0 0 15px rgba(34, 197, 94, 0.1);
+    }
+    
+    .command-status-dot {
+        width: 7px;
+        height: 7px;
+        background: #22c55e;
+        border-radius: 2px;
+        box-shadow: 0 0 12px #22c55e, 0 0 24px #22c55e;
+        animation: command-pulse 1.5s ease-in-out infinite;
+    }
+    
+    .command-status-text {
+        color: #4ade80;
+        font-size: 8px;
+        font-weight: 700;
+        font-family: 'IBM Plex Mono', monospace;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        line-height: 1.2;
+    }
+    
+    @keyframes command-pulse {
+        0%, 100% { 
+            opacity: 1; 
+            box-shadow: 0 0 15px #22c55e, 0 0 30px #22c55e;
+        }
+        50% { 
+            opacity: 0.4; 
+            box-shadow: 0 0 8px #22c55e, 0 0 16px #22c55e;
+        }
+    }
+    </style>
+    
+    <div class="command-header">
+        <div class="command-content">
+            <div class="command-title-wrapper">
+                <h1 class="command-title">
+                    🛡️ CrimeWatch India AI — Intelligence Command Center
+                </h1>
+                <p class="command-subtitle">
+                    Transforming Crime Data into Proactive Safety Intelligence
+                </p>
             </div>
-          </div>
-          <div style="text-align:center;">
-            <span class="mission-tag">MISSION: TRANSFORM RAW CRIME DATA INTO ACTIONABLE INTELLIGENCE</span>
-          </div>
-          <div class="status-indicator">
-            <span class="status-dot"></span>
-            <span class="status-text">ML ENGINE: SYNCHRONIZED</span>
-          </div>
+            <div class="command-status">
+                <div class="command-status-dot"></div>
+                <span class="command-status-text">ML ENGINE:<br/>SYNCHRONIZED</span>
+            </div>
         </div>
-        <div class="header-divider"></div>
-        """,
-        unsafe_allow_html=True,
-    )
+    </div>
+    """, unsafe_allow_html=True)
 
 
 def render_control_panel(df: pd.DataFrame) -> None:
@@ -3256,6 +3456,7 @@ def render_tabs(
     with tabs[9]:
         st.markdown('<div class="section-header">🧠 Supervised Risk Prediction</div>', unsafe_allow_html=True)
         st.caption("Predict next-period district risk bucket (LOW/MEDIUM/HIGH/CRITICAL) using RandomForest/XGBoost (if available).")
+        
         if supervised_result.get("status") != "OK":
             st.warning(f"Risk predictor unavailable: {supervised_result.get('status')} {supervised_result.get('reason','')}")
         else:
@@ -3263,30 +3464,70 @@ def render_tabs(
 
             labels = supervised_result.get("labels", [])
             cm = supervised_result.get("confusion_matrix", None)
+            
+            # Display Confusion Matrix
             if cm is not None and labels:
                 fig_cm = figure_confusion_matrix(cm, labels, "Confusion Matrix (Next Risk Bucket)")
                 st.plotly_chart(fig_cm, use_container_width=True)
 
+            # ✅ FIXED: Display Classification Report
             report = supervised_result.get("report", {})
             if report:
-                # Extract compact summary
+                st.subheader("Classification Report (Summary)")
+                
+                # Extract compact summary - ROBUST VERSION
                 rows = []
+                
+                # Try matching labels to report keys
                 for lab in labels:
                     if lab in report:
-                        rows.append(
-                            {
-                                "Class": lab,
-                                "Precision": float(report[lab].get("precision", 0.0)),
-                                "Recall": float(report[lab].get("recall", 0.0)),
-                                "F1": float(report[lab].get("f1-score", 0.0)),
-                                "Support": int(report[lab].get("support", 0)),
-                            }
-                        )
-                df_rep = pd.DataFrame(rows)
-                st.markdown('<div class="glass-card" style="padding:14px;">', unsafe_allow_html=True)
-                st.subheader("Classification Report (Summary)")
-                st.dataframe(df_rep, use_container_width=True, height=240)
-                st.markdown("</div>", unsafe_allow_html=True)
+                        rows.append({
+                            "Class": lab,
+                            "Precision": float(report[lab].get("precision", 0.0)),
+                            "Recall": float(report[lab].get("recall", 0.0)),
+                            "F1": float(report[lab].get("f1-score", 0.0)),
+                            "Support": int(report[lab].get("support", 0)),
+                        })
+                
+                # ✅ FALLBACK: If no matches, iterate through report keys directly
+                if not rows:
+                    for key, value in report.items():
+                        if key not in ["accuracy", "macro avg", "weighted avg"]:
+                            rows.append({
+                                "Class": key,
+                                "Precision": float(value.get("precision", 0.0)),
+                                "Recall": float(value.get("recall", 0.0)),
+                                "F1": float(value.get("f1-score", 0.0)),
+                                "Support": int(value.get("support", 0)),
+                            })
+                
+                # ✅ Add macro/weighted averages if available
+                if "macro avg" in report:
+                    rows.append({
+                        "Class": "Macro Avg",
+                        "Precision": float(report["macro avg"].get("precision", 0.0)),
+                        "Recall": float(report["macro avg"].get("recall", 0.0)),
+                        "F1": float(report["macro avg"].get("f1-score", 0.0)),
+                        "Support": "-",
+                    })
+                
+                if "weighted avg" in report:
+                    rows.append({
+                        "Class": "Weighted Avg",
+                        "Precision": float(report["weighted avg"].get("precision", 0.0)),
+                        "Recall": float(report["weighted avg"].get("recall", 0.0)),
+                        "F1": float(report["weighted avg"].get("f1-score", 0.0)),
+                        "Support": "-",
+                    })
+                
+                # Display table
+                if rows:
+                    df_rep = pd.DataFrame(rows)
+                    st.markdown('<div class="glass-card" style="padding:14px;">', unsafe_allow_html=True)
+                    st.dataframe(df_rep, use_container_width=True, height=280)
+                    st.markdown("</div>", unsafe_allow_html=True)
+                else:
+                    st.info("📊 Classification report data not available")
 
             # Feature importances
             importances = supervised_result.get("feature_importances", None)
