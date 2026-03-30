@@ -17,6 +17,9 @@ import plotly.graph_objects as go
 import streamlit as st
 from importlib.util import find_spec
 
+import streamlit as st
+st.cache_data.clear()
+st.cache_resource.clear()
 
 warnings.filterwarnings("ignore")
 
@@ -2367,7 +2370,7 @@ def render_header() -> None:
         background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(10, 10, 18, 0.95) 100%);
         border: 2px solid rgba(56, 189, 248, 0.4);
         border-radius: 4px;
-        padding: 16px 24px;
+        padding: 12px 20px;
         margin-bottom: 20px;
         box-shadow: 
             0 0 30px rgba(56, 189, 248, 0.15),
