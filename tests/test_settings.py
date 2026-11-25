@@ -6,7 +6,7 @@ from src.crimewatch.settings import Settings, SettingsError
 def test_defaults_are_development():
     s = Settings.from_env({})
     assert s.app_env == "development" and s.auth_mode == "local"
-    assert s.is_synthetic and s.allow_live_pulse
+    assert s.data_source == "file" and s.allow_live_pulse
     assert s.session_timeout_min == 30
 
 

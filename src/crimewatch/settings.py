@@ -12,12 +12,14 @@ CW_APP_ENV             development | production        development
 CW_AUTH_MODE           oidc | local | none             local (none is refused in production)
 CW_USERS_FILE          path to users JSON              config/users.json
 CW_DEV_ROLE            role used when AUTH_MODE=none   admin
-CW_DATA_SOURCE         synthetic | file                synthetic
+CW_DATA_SOURCE         synthetic | file                file (NCRB-derived parquet)
 CW_DATA_PATH           CSV or Parquet path             data/processed/dashboard_dataset.parquet
 CW_AUDIT_LOG_PATH      path for JSON-lines audit log   logs/audit.jsonl
 CW_ALLOW_LIVE_PULSE    true | false                    true in development, false in production
 CW_SESSION_TIMEOUT_MIN idle minutes before logout      30
 CW_MAX_LOGIN_ATTEMPTS  failed logins before lockout    5
+CW_LIVE_DB             SQLite file for live feed       data/live/live.db
+CW_API_KEYS_FILE       API keys for data partners      config/api_keys.json
 =====================  ==============================  =======================================
 """
 
@@ -79,6 +81,8 @@ class Settings:
     allow_live_pulse: bool
     session_timeout_min: int
     max_login_attempts: int
+    live_db_path: Path = PROJECT_ROOT / "data/live/live.db"
+    api_keys_file: Path = PROJECT_ROOT / "config/api_keys.json"
 
     @property
     def is_production(self) -> bool:
@@ -103,7 +107,7 @@ class Settings:
         if production and auth_mode == "none":
             raise SettingsError("CW_AUTH_MODE=none is not allowed when CW_APP_ENV=production")
 
-        data_source = env.get("CW_DATA_SOURCE", "synthetic").strip().lower()
+        data_source = env.get("CW_DATA_SOURCE", "file").strip().lower()
         if data_source not in VALID_DATA_SOURCES:
             raise SettingsError(f"CW_DATA_SOURCE must be one of {sorted(VALID_DATA_SOURCES)}, got {data_source!r}")
 
@@ -125,4 +129,6 @@ class Settings:
             allow_live_pulse=_as_bool(env.get("CW_ALLOW_LIVE_PULSE"), default=not production),
             session_timeout_min=_as_int(env.get("CW_SESSION_TIMEOUT_MIN"), 30, "CW_SESSION_TIMEOUT_MIN"),
             max_login_attempts=_as_int(env.get("CW_MAX_LOGIN_ATTEMPTS"), 5, "CW_MAX_LOGIN_ATTEMPTS"),
+            live_db_path=_resolve(env.get("CW_LIVE_DB", "data/live/live.db")),
+            api_keys_file=_resolve(env.get("CW_API_KEYS_FILE", "config/api_keys.json")),
         )

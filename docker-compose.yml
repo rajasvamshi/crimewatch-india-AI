@@ -8,12 +8,13 @@ services:
     environment:
       CW_APP_ENV: ${CW_APP_ENV:-production}
       CW_AUTH_MODE: ${CW_AUTH_MODE:-local}
-      CW_DATA_SOURCE: ${CW_DATA_SOURCE:-synthetic}
+      CW_DATA_SOURCE: ${CW_DATA_SOURCE:-file}
       CW_DATA_PATH: ${CW_DATA_PATH:-data/processed/dashboard_dataset.parquet}
     volumes:
       - ./config:/app/config            # users.json lives here (git-ignored)
       - ./logs:/app/logs                # audit trail persists across restarts
       - ./data/processed:/app/data/processed:ro
+      - ./data/live:/app/data/live      # live-feed database shared with the API
     read_only: true
     tmpfs:
       - /tmp
@@ -21,4 +22,25 @@ services:
     security_opt:
       - no-new-privileges:true
     cap_drop: [ALL]
+    restart: unless-stopped
+
+  api:
+    build: .
+    command: ["uvicorn", "src.crimewatch.api:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      CW_APP_ENV: ${CW_APP_ENV:-production}
+    volumes:
+      - ./config:/app/config:ro         # api_keys.json
+      - ./logs:/app/logs
+      - ./data/processed:/app/data/processed:ro
+      - ./data/live:/app/data/live
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/v1/health"]
+      interval: 30s
     restart: unless-stopped

@@ -18,6 +18,8 @@ pytestmark = pytest.mark.slow
 @pytest.fixture(autouse=True)
 def _isolated(monkeypatch, tmp_path):
     monkeypatch.setenv("CW_AUDIT_LOG_PATH", str(tmp_path / "audit.jsonl"))
+    monkeypatch.setenv("CW_DATA_SOURCE", "synthetic")
+    monkeypatch.setenv("CW_LIVE_DB", str(tmp_path / "live.db"))
     users = tmp_path / "users.json"
     users.write_text(
         json.dumps(
@@ -117,3 +119,23 @@ def test_file_data_source_rejects_invalid_dataset(monkeypatch, _isolated):
     at = AppTest.from_file(APP, default_timeout=300).run()
     assert any("failed validation" in e.value for e in at.error)
     assert len(at.tabs) == 0
+
+
+def test_real_ncrb_dataset_with_live_feed(monkeypatch, _isolated):
+    from datetime import date, timedelta
+
+    from src.crimewatch.live_store import DailyCount, LiveStore
+
+    LiveStore(_isolated / "live.db").upsert(
+        [DailyCount(date.today() - timedelta(days=i), "Goa", "North Goa", "Theft", 3 + i) for i in range(5)],
+        source="test-partner",
+    )
+    monkeypatch.setenv("CW_AUTH_MODE", "none")
+    monkeypatch.setenv("CW_DATA_SOURCE", "file")
+    monkeypatch.delenv("CW_DATA_PATH", raising=False)  # default = committed NCRB parquet
+    at = AppTest.from_file(APP, default_timeout=300).run()
+    assert not at.exception, at.exception
+    assert len(at.tabs) == 15
+    assert "Ladakh" in at.selectbox(key="state_selector").options  # real UT list, not the demo's
+    assert any("Live Feed" in m.value for m in at.markdown)
+    assert any("test-partner" in c.value or "1 partner" in c.value for c in at.caption)

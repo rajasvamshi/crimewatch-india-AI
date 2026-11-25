@@ -27,6 +27,7 @@ from src.crimewatch.auth import Permission, scope_states  # noqa: E402
 from src.crimewatch.data_source import DataValidationError, load_dashboard_file  # noqa: E402
 from src.crimewatch.settings import SettingsError  # noqa: E402
 from src.crimewatch import ui_auth  # noqa: E402
+from src.crimewatch.live_store import LiveStore  # noqa: E402
 
 # NOTE: the former module-level st.cache_data.clear() ran on every rerun (every click),
 # which disabled all caching and retrained every model per interaction. Removed.
@@ -1072,8 +1073,22 @@ CRIME_CATEGORIES: list[str] = [
 ]
 
 
+# Union Territories present in NCRB data but not in the synthetic demo. Centroids computed
+# from the largest polygon of each UT in data/geo/Admin2.shp.
+EXTRA_STATE_CENTROIDS: Dict[str, Tuple[float, float]] = {
+    "Andaman And Nicobar Islands": (12.6028, 92.8288),
+    "Chandigarh": (30.7293, 76.7805),
+    "Dadra And Nagar Haveli And Daman And Diu": (20.1931, 73.0715),
+    "Jammu And Kashmir": (33.6725, 74.8572),
+    "Ladakh": (34.9439, 76.7965),
+    "Lakshadweep": (10.8115, 73.6780),
+    "Puducherry": (10.9328, 79.8034),
+}
+
+
 def _geo_lat_lon(state_name_norm: str, district_name_norm: str) -> Tuple[float, float]:
-    base = STATE_CENTROIDS.get(state_name_norm, (22.9734, 78.6569))
+    """Approximate district position: state centroid + stable jitter (no district boundaries yet)."""
+    base = STATE_CENTROIDS.get(state_name_norm) or EXTRA_STATE_CENTROIDS.get(state_name_norm, (22.9734, 78.6569))
     jlat, jlon = _stable_jitter_pair(f"{state_name_norm}|{district_name_norm}")
     lat = float(base[0] + jlat)
     lon = float(base[1] + jlon)
@@ -1094,9 +1109,15 @@ def _enrich_dataset(df: pd.DataFrame) -> pd.DataFrame:
     df["category"] = df["category"].astype(str).apply(normalize_name)
     df["crime_type"] = df["crime_type"].astype(str).apply(normalize_name)
     df["district_key"] = df["state_name_norm"] + " | " + df["district_name_norm"]
-    lat_lon = df.apply(lambda r: _geo_lat_lon(str(r["state_name_norm"]), str(r["district_name_norm"])), axis=1)
-    df["lat"] = [p[0] for p in lat_lon]
-    df["lon"] = [p[1] for p in lat_lon]
+    # Compute coordinates once per district (not per row): ~800 calls instead of ~44,000.
+    keys = df[["state_name_norm", "district_name_norm"]].drop_duplicates()
+    coords = {
+        (s_, d_): _geo_lat_lon(str(s_), str(d_))
+        for s_, d_ in zip(keys["state_name_norm"], keys["district_name_norm"])
+    }
+    pairs = list(zip(df["state_name_norm"], df["district_name_norm"]))
+    df["lat"] = [coords[k][0] for k in pairs]
+    df["lon"] = [coords[k][1] for k in pairs]
     return df.reset_index(drop=True)
 
 
@@ -1105,6 +1126,53 @@ def load_file_data(path: str, _mtime: float) -> Tuple[pd.DataFrame, Dict[str, An
     """Load a validated ETL output file (CSV/Parquet). Raises DataValidationError."""
     df, info = load_dashboard_file(Path(path))
     return _enrich_dataset(df), {"path": info.path, "sha256": info.sha256, "rows": info.rows}
+
+
+@st.cache_data(show_spinner=False, ttl=60)
+def load_live_feed(db_path: str, _mtime: float) -> Tuple[pd.DataFrame, Dict[str, Any]]:
+    """Daily counts pushed by data partners through the API (refreshes every minute)."""
+    p = Path(db_path)
+    if not p.exists():
+        return pd.DataFrame(), {"records": 0}
+    store = LiveStore(p)
+    return store.frame(), store.status()
+
+
+def render_live_feed(user_states: Optional[Tuple[str, ...]]) -> None:
+    """Near-real-time panel. Kept apart from the annual NCRB analytics so partial-year
+    counts never distort year-on-year growth, risk scores or forecasts."""
+    settings = ui_auth.get_settings()
+    db = settings.live_db_path
+    live, status = load_live_feed(str(db), db.stat().st_mtime if db.exists() else 0.0)
+    if live.empty:
+        st.caption(
+            "Live feed: no partner is sending daily data yet. Figures below are official NCRB annual statistics."
+        )
+        return
+    if user_states is not None:
+        live = live[live["state_name"].isin(user_states)]
+    if live.empty:
+        return
+    live = live.assign(day=pd.to_datetime(live["day"]))
+    cutoff = live["day"].max() - pd.Timedelta(days=29)
+    recent = live[live["day"] >= cutoff]
+    st.markdown('<div class="section-header">📡 Live Feed (last 30 days)</div>', unsafe_allow_html=True)
+    st.caption(
+        f"{int(status.get('records', 0)):,} daily records from {int(status.get('sources', 0))} partner(s) · "
+        f"latest day {status.get('latest_day')} · last received {status.get('last_received')} UTC · "
+        "provisional, not yet verified by NCRB"
+    )
+    c1, c2 = st.columns([2, 1])
+    with c1:
+        daily = recent.groupby("day", as_index=False)["crime_count"].sum()
+        fig = px.line(daily, x="day", y="crime_count", markers=True, title="Reported cases per day")
+        st.plotly_chart(apply_tactical_theme(fig), use_container_width=True)
+    with c2:
+        by_cat = (
+            recent.groupby("category", as_index=False)["crime_count"].sum().sort_values("crime_count", ascending=False)
+        )
+        st.dataframe(by_cat.rename(columns={"category": "Category", "crime_count": "Cases (30 days)"}),
+                     use_container_width=True, hide_index=True)
 
 
 @st.cache_data(show_spinner=False, ttl=3600)
@@ -2127,8 +2195,6 @@ def train_risk_predictor(
     unique_classes = sorted(y_encoded.unique().tolist())
     n_classes = len(unique_classes)
     
-    print(f"DEBUG: Unique classes in y: {unique_classes}")
-    print(f"DEBUG: Number of samples: {len(y_encoded)}")
 
     if n_classes < 2 or len(y_encoded) < 60:
         return {
@@ -2565,7 +2631,11 @@ def render_control_panel(df: pd.DataFrame) -> None:
         st.markdown('<div class="filter-label">📍 State Sector</div>', unsafe_allow_html=True)
         # CHANGE: state dropdown sourced from STATE_CENTROIDS keys ONLY (canonical, cache-safe)
         _user = ui_auth.current_user()
-        _canonical = sorted(STATE_CENTROIDS.keys())
+        _canonical = (
+            sorted(STATE_CENTROIDS.keys())
+            if ui_auth.get_settings().is_synthetic
+            else sorted(df["state_name_norm"].astype(str).unique().tolist())
+        )
         states = ["ALL STATES"] + (scope_states(_user, _canonical) if _user else _canonical)
         # Ensure value remains valid
         if st.session_state.state not in states:
@@ -2582,7 +2652,13 @@ def render_control_panel(df: pd.DataFrame) -> None:
         st.markdown('<div class="filter-label">🎯 District Zone</div>', unsafe_allow_html=True)
         if st.session_state.state != "ALL STATES":
             # CHANGE: district dropdown sourced from DISTRICTS_BY_STATE[selected_state] ONLY
-            districts = ["ALL DISTRICTS"] + [normalize_name(d) for d in DISTRICTS_BY_STATE.get(st.session_state.state, [])]
+            if ui_auth.get_settings().is_synthetic:
+                _dists = [normalize_name(d) for d in DISTRICTS_BY_STATE.get(st.session_state.state, [])]
+            else:
+                _dists = sorted(
+                    df.loc[df["state_name_norm"] == st.session_state.state, "district_name_norm"].astype(str).unique()
+                )
+            districts = ["ALL DISTRICTS"] + _dists
             if st.session_state.district not in districts:
                 st.session_state.district = "ALL DISTRICTS"
             st.session_state.district = st.selectbox(
@@ -3911,7 +3987,12 @@ def main() -> None:
             for err in e.errors:
                 st.markdown(f"- {err}")
             st.stop()
-        st.caption(f"Dataset: {Path(data_meta['path']).name} · {data_meta['rows']:,} rows · SHA-256 {data_meta['sha256'][:12]}…")
+        st.caption(
+            f"Dataset: {Path(data_meta['path']).name} · {data_meta['rows']:,} rows · "
+            f"SHA-256 {data_meta['sha256'][:12]}… · district map positions are approximate"
+        )
+        if int(df["arrests"].sum()) == 0:
+            st.caption("Arrest counts are not published in this source, so arrest ratios show as 0.")
 
     # CHANGE: detect stale cached dataset; clear cache once; reload once (synthetic only)
     if settings.is_synthetic and is_cached_dataset_stale(df):
@@ -4022,6 +4103,10 @@ def main() -> None:
     # 10) Forecast (baseline strategy uses session state)
     # forecast strategy selector exists in Forecast tab; here we compute initial forecast for briefing/warnings
     fdf, fmeta = run_forecast(yearly, str(st.session_state.forecast_strategy), int(st.session_state.forecast_years_ahead))
+
+    # Live feed (near-real-time partner data; separate from annual analytics)
+    if not settings.is_synthetic:
+        render_live_feed(user.states)
 
     # 6) Intelligence briefing + Warning panel
     render_briefing(risk_latest, fmeta, anomaly_meta, spikes_df)

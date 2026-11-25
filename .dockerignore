@@ -14,5 +14,7 @@ notebooks/
 tests/
 data/raw/
 data/processed/*.csv
+data/live/
+config/api_keys.json
 config/users.json
 .streamlit/secrets.toml

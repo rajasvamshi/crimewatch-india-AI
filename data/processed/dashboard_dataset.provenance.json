@@ -1,0 +1,29 @@
+{
+  "built_at": "2026-11-25T21:45:28+00:00",
+  "mapping_version": "2026.11.1",
+  "source_file": "master_crime_long.csv",
+  "source_sha256": "62228f3ef9505e643ba9fb9a7da9e290ad5bfbe5df92c837d2c02dd97914aa0e",
+  "source_rows": 2824653,
+  "output_file": "dashboard_dataset.parquet",
+  "output_sha256": "9d5d5008186c740908fb3bdbea7d2a3f637d23b086052f60d33b49b7bc1ac46b",
+  "output_rows": 43645,
+  "years": [
+    2017,
+    2022
+  ],
+  "states": 36,
+  "districts": 795,
+  "category_totals": {
+    "Assault": 5160442,
+    "Burglary": 847655,
+    "Cyber Crime": 151799,
+    "Domestic Violence": 839343,
+    "Drug Offense": 451876,
+    "Fraud": 988967,
+    "Kidnapping": 604443,
+    "Murder": 199834,
+    "Robbery": 281726,
+    "Theft": 3668687
+  },
+  "notes": "Arrests are not published in NCRB district tables; arrests column is 0."
+}

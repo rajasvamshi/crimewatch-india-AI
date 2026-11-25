@@ -44,3 +44,7 @@ logs/
 config/users.json
 .pytest_cache/
 .ruff_cache/
+
+# Live feed database and partner API keys
+data/live/
+config/api_keys.json

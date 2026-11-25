@@ -26,10 +26,11 @@ COPY app/ ./app/
 COPY scripts/ ./scripts/
 COPY config/users.example.json ./config/users.example.json
 COPY data/geo/ ./data/geo/
+COPY data/processed/dashboard_dataset.parquet data/processed/dashboard_dataset.provenance.json ./data/processed/
 
 RUN useradd --create-home --uid 1000 crimewatch \
-    && mkdir -p /app/logs /app/data/processed \
-    && chown -R crimewatch:crimewatch /app/logs /app/config /app/data/processed
+    && mkdir -p /app/logs /app/data/live \
+    && chown -R crimewatch:crimewatch /app/logs /app/config /app/data/live
 USER crimewatch
 
 EXPOSE 8501

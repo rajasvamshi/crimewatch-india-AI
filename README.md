@@ -233,7 +233,7 @@ All settings come from environment variables (copy `.env.example`). The most imp
 |---|---|---|
 | `CW_APP_ENV` | `development` / `production` | `development` |
 | `CW_AUTH_MODE` | `oidc` (government SSO) / `local` / `none` | `local` |
-| `CW_DATA_SOURCE` | `synthetic` / `file` | `synthetic` |
+| `CW_DATA_SOURCE` | `file` (real NCRB data) / `synthetic` (random demo) | `file` |
 | `CW_DATA_PATH` | validated CSV or Parquet | `data/processed/dashboard_dataset.parquet` |
 | `CW_AUDIT_LOG_PATH` | JSON-lines audit trail | `logs/audit.jsonl` |
 
@@ -265,6 +265,24 @@ pip install -r requirements-dev.txt
 pytest                # unit + headless app smoke tests
 ruff check src/crimewatch scripts tests
 ```
+
+**Data**
+
+The app now runs on real NCRB district statistics (2017–2022, 36 states/UTs, 10 crime groups)
+from `data/processed/dashboard_dataset.parquet`. Rebuild it from the master table with
+`python -m src.crimewatch.etl_dashboard`; the mapping from NCRB heads to the 10 groups is
+documented in `src/crimewatch/etl_dashboard.py`, and `dashboard_dataset.provenance.json`
+records the source hash for every build.
+
+**Live feed API** (for police data partners)
+
+```bash
+python scripts/manage_api_keys.py add ts-police --scopes ingest --states Telangana
+uvicorn src.crimewatch.api:app --port 8000     # docs at /docs outside production
+```
+
+Partners `POST /v1/ingest/daily` aggregate daily counts (no personal data). The dashboard shows
+them in a separate "Live Feed" panel, kept apart from official annual statistics.
 
 See [SECURITY.md](SECURITY.md) for the full security model.
 
