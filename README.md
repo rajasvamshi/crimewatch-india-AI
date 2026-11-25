@@ -184,12 +184,30 @@ source .venv/bin/activate
 #### 3️⃣ Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt        # add -dev to also get test tools
 ```
 
 ---
 
-#### 4️⃣ Run the Streamlit Application
+#### 4️⃣ Choose how people sign in
+
+By default the app requires a login. Create the first administrator:
+
+```bash
+python scripts/manage_users.py add admin --role admin
+```
+
+For a quick look on your own laptop only, you can skip login:
+
+```bash
+export CW_AUTH_MODE=none   # Windows PowerShell: $env:CW_AUTH_MODE="none"
+```
+
+See [Configuration & Security](#-configuration--security) for SSO and production settings.
+
+---
+
+#### 5️⃣ Run the Streamlit Application
 
 ```bash
 streamlit run app/dashboard.py
@@ -197,13 +215,58 @@ streamlit run app/dashboard.py
 
 ---
 
-#### 5️⃣ Open the Application in Your Browser
+#### 6️⃣ Open the Application in Your Browser
 
 ```
 http://localhost:8501
 ```
 
 Once launched, the **CrimeWatch AI dashboard** will automatically open in your browser.
+
+---
+
+# 🔐 Configuration & Security
+
+All settings come from environment variables (copy `.env.example`). The most important:
+
+| Variable | Values | Default |
+|---|---|---|
+| `CW_APP_ENV` | `development` / `production` | `development` |
+| `CW_AUTH_MODE` | `oidc` (government SSO) / `local` / `none` | `local` |
+| `CW_DATA_SOURCE` | `synthetic` / `file` | `synthetic` |
+| `CW_DATA_PATH` | validated CSV or Parquet | `data/processed/dashboard_dataset.parquet` |
+| `CW_AUDIT_LOG_PATH` | JSON-lines audit trail | `logs/audit.jsonl` |
+
+**Roles**
+
+| Role | Can do |
+|---|---|
+| viewer | See dashboards for assigned states |
+| analyst | + export data, download reports |
+| supervisor | + Live Pulse simulation, model governance |
+| admin | + bulk-export override, everything |
+
+**Production** (`CW_APP_ENV=production`) refuses to start without authentication and turns the
+Live Pulse simulation off. For SSO, copy `.streamlit/secrets.toml.example` to
+`.streamlit/secrets.toml`, fill in your identity provider, and set `CW_AUTH_MODE=oidc`.
+Map SSO e-mails to roles and states in `config/users.json` (see `config/users.example.json`).
+
+**Docker**
+
+```bash
+docker compose run --rm crimewatch python scripts/manage_users.py add admin --role admin
+docker compose up --build        # http://localhost:8501
+```
+
+**Tests**
+
+```bash
+pip install -r requirements-dev.txt
+pytest                # unit + headless app smoke tests
+ruff check src/crimewatch scripts tests
+```
+
+See [SECURITY.md](SECURITY.md) for the full security model.
 
 ---
 
@@ -344,7 +407,6 @@ Planned enhancements include:
 - Real-time data ingestion pipelines
 
 ### Platform Enhancements
-- Role-based user authentication
 - Mobile-responsive interface for field officers
 - Export to PDF / PowerPoint reports
 

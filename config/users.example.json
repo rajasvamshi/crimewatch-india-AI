@@ -1,0 +1,20 @@
+{
+  "users": [
+    {
+      "username": "admin",
+      "display_name": "System Administrator",
+      "role": "admin",
+      "states": ["*"],
+      "email": "admin@example.gov.in",
+      "password_hash": "create with: python scripts/manage_users.py add admin --role admin"
+    },
+    {
+      "username": "sp.hyderabad",
+      "display_name": "SP Hyderabad",
+      "role": "supervisor",
+      "states": ["Telangana"],
+      "email": "sp.hyderabad@example.gov.in",
+      "password_hash": "create with: python scripts/manage_users.py add sp.hyderabad --role supervisor --states Telangana"
+    }
+  ]
+}

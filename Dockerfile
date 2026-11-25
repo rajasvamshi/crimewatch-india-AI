@@ -1,47 +1,41 @@
-# Use official Python runtime as base
+# CrimeWatch India - production image.
+# Secure by default: CW_APP_ENV=production refuses to start without authentication and
+# disables the Live Pulse simulation. Mount users/secrets at runtime; never bake them in.
 FROM python:3.11-slim
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    STREAMLIT_SERVER_PORT=8501 \
-    STREAMLIT_SERVER_ADDRESS=0.0.0.0 \
-    STREAMLIT_BROWSER_GATHER_USAGE_STATS=false \
-    LOG_LEVEL=INFO
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    CW_APP_ENV=production \
+    CW_AUTH_MODE=local \
+    CW_AUDIT_LOG_PATH=/app/logs/audit.jsonl
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Set work directory
 WORKDIR /app
 
-# Install Python dependencies (Docker-specific, Linux-compatible)
-COPY requirements-docker.txt .
-RUN pip install --no-cache-dir -r requirements-docker.txt
+COPY requirements.txt .
+RUN pip install -r requirements.txt
 
-# Copy application code
-COPY app/ ./app/
-COPY data/ ./data/
+COPY .streamlit/config.toml ./.streamlit/config.toml
 COPY src/ ./src/
-COPY data/geo/ ./assets/
+COPY app/ ./app/
+COPY scripts/ ./scripts/
+COPY config/users.example.json ./config/users.example.json
+COPY data/geo/ ./data/geo/
 
-# Create non-root user for security
-RUN useradd -m -u 1000 crimewatch && chown -R crimewatch:crimewatch /app
+RUN useradd --create-home --uid 1000 crimewatch \
+    && mkdir -p /app/logs /app/data/processed \
+    && chown -R crimewatch:crimewatch /app/logs /app/config /app/data/processed
 USER crimewatch
 
-# Expose port
 EXPOSE 8501
 
-# Health check for orchestrators
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8501/_stcore/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -fsS http://localhost:8501/_stcore/health || exit 1
 
-# Run the application
-CMD ["streamlit", "run", "app/dashboard.py", \
-     "--server.port=8501", \
-     "--server.address=0.0.0.0", \
-     "--server.enableCORS=false", \
-     "--server.enableXsrfProtection=false"]
+# XSRF protection and other hardening come from .streamlit/config.toml.
+CMD ["streamlit", "run", "app/dashboard.py", "--server.port=8501", "--server.address=0.0.0.0"]

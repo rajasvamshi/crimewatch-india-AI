@@ -38,4 +38,9 @@ data/raw/
 
 # Streamlit temporary files
 *.pyc
-.streamlit/config.toml
+# .streamlit/config.toml is committed on purpose (security settings).
+# Runtime state - never commit
+logs/
+config/users.json
+.pytest_cache/
+.ruff_cache/

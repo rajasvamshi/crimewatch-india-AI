@@ -1,0 +1,27 @@
+[project]
+name = "crimewatch-india"
+version = "0.2.0"
+description = "Decision-support analytics dashboard for aggregated crime statistics in India"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: runs the full Streamlit app headlessly"]
+filterwarnings = ["ignore::DeprecationWarning", "ignore::FutureWarning"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+# The legacy dashboard is linted after it is split into modules (roadmap phase 2).
+extend-exclude = ["app/dashboard.py", "notebooks", "src/build_master_dataset.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "S", "UP"]
+ignore = ["S101"]  # assert is fine in tests and ETL quality gates
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S", "B"]
+
+[tool.bandit]
+exclude_dirs = ["tests", "notebooks", ".venv"]

@@ -16,12 +16,23 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from importlib.util import find_spec
+import sys
 
-import streamlit as st
-st.cache_data.clear()
-st.cache_resource.clear()
+# Make the project root importable (for src.crimewatch) when run via `streamlit run app/dashboard.py`.
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
-warnings.filterwarnings("ignore")
+from src.crimewatch.auth import Permission, scope_states  # noqa: E402
+from src.crimewatch.data_source import DataValidationError, load_dashboard_file  # noqa: E402
+from src.crimewatch.settings import SettingsError  # noqa: E402
+from src.crimewatch import ui_auth  # noqa: E402
+
+# NOTE: the former module-level st.cache_data.clear() ran on every rerun (every click),
+# which disabled all caching and retrained every model per interaction. Removed.
+
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
 
 DATASET_SCHEMA_VERSION = 4  # CHANGE: cache hardening (+1)
 
@@ -29,17 +40,18 @@ DATASET_SCHEMA_VERSION = 4  # CHANGE: cache hardening (+1)
 # ============================================================
 # 🔐 SECURITY & AUDIT LOGGING SETUP
 # ============================================================
-logging.basicConfig(
-    filename="crimewatch_audit.log",
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")
 
 
 def log_action(action: str, user: Optional[str] = None, details: Optional[str] = None) -> None:
-    """Log dashboard actions for audit trail."""
-    log_entry = f"Action: {action} | User: {user or 'anonymous'} | Details: {details or 'N/A'}"
-    logging.info(log_entry)
+    """Record a dashboard action in the structured, hash-chained audit trail.
+
+    The signed-in user and session are attached automatically by ui_auth.audit().
+    """
+    try:
+        ui_auth.audit(action, details=details or "")
+    except Exception:  # audit must never take the dashboard down; fall back to stderr
+        logging.getLogger("crimewatch.audit").exception("audit write failed for %s", action)
 
 
 # ============================================================
@@ -1074,6 +1086,27 @@ def _geo_lat_lon(state_name_norm: str, district_name_norm: str) -> Tuple[float, 
 # ============================================================
 # 📊 DATA LOADING - SYNTHETIC (DEMO)
 # ============================================================
+def _enrich_dataset(df: pd.DataFrame) -> pd.DataFrame:
+    """Add normalised keys and coordinates expected by every engine."""
+    df = df.copy()
+    df["state_name_norm"] = df["state_name"].astype(str).apply(normalize_name)
+    df["district_name_norm"] = df["district_name"].astype(str).apply(normalize_name)
+    df["category"] = df["category"].astype(str).apply(normalize_name)
+    df["crime_type"] = df["crime_type"].astype(str).apply(normalize_name)
+    df["district_key"] = df["state_name_norm"] + " | " + df["district_name_norm"]
+    lat_lon = df.apply(lambda r: _geo_lat_lon(str(r["state_name_norm"]), str(r["district_name_norm"])), axis=1)
+    df["lat"] = [p[0] for p in lat_lon]
+    df["lon"] = [p[1] for p in lat_lon]
+    return df.reset_index(drop=True)
+
+
+@st.cache_data(show_spinner=False, ttl=3600)
+def load_file_data(path: str, _mtime: float) -> Tuple[pd.DataFrame, Dict[str, Any]]:
+    """Load a validated ETL output file (CSV/Parquet). Raises DataValidationError."""
+    df, info = load_dashboard_file(Path(path))
+    return _enrich_dataset(df), {"path": info.path, "sha256": info.sha256, "rows": info.rows}
+
+
 @st.cache_data(show_spinner=False, ttl=3600)
 def load_crime_data(seed: int = 42, schema_version: int = DATASET_SCHEMA_VERSION) -> pd.DataFrame:
     """
@@ -1145,22 +1178,9 @@ def load_crime_data(seed: int = 42, schema_version: int = DATASET_SCHEMA_VERSION
                         }
                     )
 
-    df = pd.DataFrame(data)
-    df["state_name_norm"] = df["state_name"].astype(str).apply(normalize_name)
-    df["district_name_norm"] = df["district_name"].astype(str).apply(normalize_name)
-    df["category"] = df["category"].astype(str).apply(normalize_name)
-    df["crime_type"] = df["crime_type"].astype(str).apply(normalize_name)
-    df["district_key"] = df["state_name_norm"] + " | " + df["district_name_norm"]
-
-    # Geo coords
-    lat_lon = df.apply(
-        lambda r: _geo_lat_lon(str(r["state_name_norm"]), str(r["district_name_norm"])), axis=1
-    )
-    df["lat"] = [p[0] for p in lat_lon]
-    df["lon"] = [p[1] for p in lat_lon]
-
+    df = _enrich_dataset(pd.DataFrame(data))
     log_action("Data Loaded", details=f"Records: {len(df):,} | Years: {df['year'].min()}-{df['year'].max()}")
-    return df.reset_index(drop=True)
+    return df
 
 
 # ============================================================
@@ -1177,7 +1197,7 @@ def init_session_state(df: pd.DataFrame) -> None:
         "category": "ALL CATEGORIES",
         "sensitivity": 1.0,
         # Live pulse simulation controls
-        "live_pulse": True,
+        "live_pulse": False,  # simulation; off by default, never on in production
         "pulse_intensity": 0.18,
         # Early warning thresholds
         "ew_pct": 50,
@@ -2544,7 +2564,9 @@ def render_control_panel(df: pd.DataFrame) -> None:
     with col_state:
         st.markdown('<div class="filter-label">📍 State Sector</div>', unsafe_allow_html=True)
         # CHANGE: state dropdown sourced from STATE_CENTROIDS keys ONLY (canonical, cache-safe)
-        states = ["ALL STATES"] + sorted(list(STATE_CENTROIDS.keys()))
+        _user = ui_auth.current_user()
+        _canonical = sorted(STATE_CENTROIDS.keys())
+        states = ["ALL STATES"] + (scope_states(_user, _canonical) if _user else _canonical)
         # Ensure value remains valid
         if st.session_state.state not in states:
             st.session_state.state = "ALL STATES"
@@ -2609,20 +2631,27 @@ def render_control_panel(df: pd.DataFrame) -> None:
         )
 
     # Live pulse controls (required main flow)
-    c1, c2, c3 = st.columns([1, 1, 2])
-    with c1:
-        st.session_state.live_pulse = st.toggle("🔴 Live Pulse", value=bool(st.session_state.live_pulse), help="Simulate live feed fluctuations.")
-    with c2:
-        st.session_state.pulse_intensity = st.slider(
-            "Pulse Intensity",
-            min_value=0.00,
-            max_value=0.50,
-            value=float(st.session_state.pulse_intensity),
-            step=0.01,
-            help="Controls amplitude of live pulse.",
-        )
-    with c3:
-        st.caption("Live pulse affects latest-year signals most; export is from filtered rows with guards.")
+    if ui_auth.get_settings().allow_live_pulse and ui_auth.can(Permission.RUN_SIMULATION):
+        c1, c2, c3 = st.columns([1, 1, 2])
+        with c1:
+            st.session_state.live_pulse = st.toggle(
+                "🔴 Live Pulse (simulation)",
+                value=bool(st.session_state.live_pulse),
+                help="Adds artificial fluctuations to emulate a streaming feed. Not real data.",
+            )
+        with c2:
+            st.session_state.pulse_intensity = st.slider(
+                "Pulse Intensity",
+                min_value=0.00,
+                max_value=0.50,
+                value=float(st.session_state.pulse_intensity),
+                step=0.01,
+                help="Controls amplitude of live pulse.",
+            )
+        with c3:
+            st.caption("Simulation only: charts change, but exports and reports always use the unmodified data.")
+    else:
+        st.session_state.live_pulse = False
     st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -2919,15 +2948,18 @@ def render_ticker(
     )
 
 
-def render_footer() -> None:
+def render_footer(synthetic: bool = True) -> None:
+    source_label = "DEMO SYNTHETIC DATA" if synthetic else "VALIDATED DATASET"
+    freshness = "Synthetic (demo) • Lag simulation supported" if synthetic else "As of the loaded ETL release"
+    coverage = "Synthetic districts • Functionality mirrors production" if synthetic else "Districts present in the loaded dataset"
     st.markdown(
-        """
+        f"""
 <div class="footer">
-  <div class="footer-title">CRIMEWATCH INDIA INTELLIGENCE PLATFORM • DEMO SYNTHETIC DATA</div>
+  <div class="footer-title">CRIMEWATCH INDIA INTELLIGENCE PLATFORM • {source_label}</div>
   <div class="footer-grid">
-    <div><strong>Data Freshness:</strong> Synthetic (demo) • Lag simulation supported</div>
+    <div><strong>Data Freshness:</strong> {freshness}</div>
     <div><strong>Next Update:</strong> Depends on upstream data pipeline</div>
-    <div><strong>Coverage:</strong> Synthetic districts • Functionality mirrors production</div>
+    <div><strong>Coverage:</strong> {coverage}</div>
   </div>
   <div class="footer-warning">
     <strong>⚠️ Critical Notice:</strong> This system reflects <em>reported</em> (or simulated) incidents. Always verify with local ground intelligence before operational decisions.
@@ -3447,13 +3479,15 @@ def render_tabs(
             )
             st.dataframe(out, use_container_width=True, height=470)
 
-            csv_bytes = strategy_df.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                "⬇️ Download Prevention Strategy CSV",
-                data=csv_bytes,
-                file_name="crimewatch_prevention_strategies.csv",
-                mime="text/csv",
-            )
+            if ui_auth.can(Permission.DOWNLOAD_REPORTS):
+                csv_bytes = strategy_df.to_csv(index=False).encode("utf-8")
+                if st.download_button(
+                    "⬇️ Download Prevention Strategy CSV",
+                    data=csv_bytes,
+                    file_name="crimewatch_prevention_strategies.csv",
+                    mime="text/csv",
+                ):
+                    log_action("Download Prevention Strategy", details=f"rows={len(strategy_df)}")
 
     # TAB: Risk Prediction
     with tabs[9]:
@@ -3552,6 +3586,9 @@ def render_tabs(
 
     # TAB: Model Governance Panel
     with tabs[10]:
+      if not ui_auth.can(Permission.VIEW_MODEL_GOVERNANCE):
+        st.info("Model governance is available to supervisors and administrators.")
+      else:
         st.markdown('<div class="section-header">🧪 Model Governance</div>', unsafe_allow_html=True)
         st.caption("Forecast MAE/MAPE, proxy alert precision/recall, drift checks, and fairness placeholder metrics.")
 
@@ -3666,12 +3703,13 @@ def render_tabs(
         st.caption("Auto-generates a professional intelligence report for decision-makers.")
         report_md = executive_report_engine(risk_latest, spikes_df, patrol_df, filtered_df)
         st.markdown(report_md)
-        st.download_button(
+        if ui_auth.can(Permission.DOWNLOAD_REPORTS) and st.download_button(
             "⬇️ Download Executive Report (Markdown)",
             data=report_md.encode("utf-8"),
             file_name="crimewatch_executive_report.md",
             mime="text/markdown",
-        )
+        ):
+            log_action("Download Executive Report", details=f"chars={len(report_md)}")
 
     # TAB: Map & Clusters
     with tabs[13]:
@@ -3741,6 +3779,9 @@ def render_tabs(
             st.dataframe(preview, use_container_width=True, height=420)
 
         # Export controls (security hardening)
+        if not ui_auth.can(Permission.EXPORT_DATA):
+            st.info("Data export is available to analysts, supervisors and administrators.")
+            return
         st.markdown('<div class="glass-card" style="padding:14px; margin-top:12px;">', unsafe_allow_html=True)
         st.subheader("Export Module (SITREP)")
 
@@ -3764,15 +3805,20 @@ def render_tabs(
                 help="Blocks export if result size exceeds this threshold unless override is enabled.",
             )
         with c3:
-            st.session_state.export_allow_large = st.toggle(
-                "Override Guard (Admin)",
-                value=bool(st.session_state.export_allow_large),
-                help="Enable only for authorised bulk exports.",
-            )
+            if ui_auth.can(Permission.EXPORT_OVERRIDE):
+                st.session_state.export_allow_large = st.toggle(
+                    "Override Guard (Admin)",
+                    value=bool(st.session_state.export_allow_large),
+                    help="Enable only for authorised bulk exports.",
+                )
+            else:
+                st.session_state.export_allow_large = False
+                st.caption("Guard override: administrators only")
 
         audit_id = _export_audit_id()
+        # Exports are official records: always the unmodified data, never Live Pulse values.
         export_df, export_meta = validate_export_request(
-            filtered_pulsed_df if use_pulsed else filtered_df,
+            filtered_df,
             row_cap=int(st.session_state.export_row_cap),
             guard_max_results=int(st.session_state.export_guard_max_results),
             allow_large=bool(st.session_state.export_allow_large),
@@ -3838,17 +3884,51 @@ def main() -> None:
         st.error("🚨 CONFIG ERROR: Canonical dropdown configuration is invalid. Fix DISTRICTS_BY_STATE / CRIME_CATEGORIES.")
         st.stop()
 
-    # 1) Load data (load once)
-    df = load_crime_data(seed=42, schema_version=DATASET_SCHEMA_VERSION)
+    # 0) Settings + authentication (nothing below runs for a signed-out visitor)
+    try:
+        settings = ui_auth.get_settings()
+    except SettingsError as e:
+        st.error(f"Configuration error: {e}")
+        st.stop()
+    user = ui_auth.require_user()
+    ui_auth.render_user_bar(user)
 
-    # CHANGE: detect stale cached dataset; clear cache once; reload once
-    if is_cached_dataset_stale(df):
+    # 1) Load data (load once)
+    if settings.is_synthetic:
+        st.warning(
+            "SIMULATED DATA: every figure on this page is randomly generated for demonstration. "
+            "Do not use it for operational or policy decisions.",
+            icon="⚠️",
+        )
+        df = load_crime_data(seed=42, schema_version=DATASET_SCHEMA_VERSION)
+    else:
+        try:
+            mtime = settings.data_path.stat().st_mtime if settings.data_path.exists() else 0.0
+            df, data_meta = load_file_data(str(settings.data_path), mtime)
+        except DataValidationError as e:
+            log_action("Data Validation Failed", details="; ".join(e.errors))
+            st.error("The configured dataset failed validation and was not loaded:")
+            for err in e.errors:
+                st.markdown(f"- {err}")
+            st.stop()
+        st.caption(f"Dataset: {Path(data_meta['path']).name} · {data_meta['rows']:,} rows · SHA-256 {data_meta['sha256'][:12]}…")
+
+    # CHANGE: detect stale cached dataset; clear cache once; reload once (synthetic only)
+    if settings.is_synthetic and is_cached_dataset_stale(df):
         log_action(
             "Cache Cleared",
             details="Cached dataset stale/incomplete vs canonical STATE_CENTROIDS/DISTRICTS_BY_STATE/CRIME_CATEGORIES; reloading.",
         )
         st.cache_data.clear()
         df = load_crime_data(seed=42, schema_version=DATASET_SCHEMA_VERSION)
+
+    # Jurisdiction scoping: officers only ever receive rows for their assigned states.
+    if user.states is not None:
+        df = df[df["state_name"].isin(user.states)].reset_index(drop=True)
+        if df.empty:
+            st.warning("No jurisdiction is assigned to your account yet. Ask an administrator to assign one.")
+            log_action("No Jurisdiction", details=user.username)
+            st.stop()
 
     init_session_state(df)
 
@@ -3989,7 +4069,7 @@ def main() -> None:
         total_crimes=int(kpi.get("total_crimes", 0)),
         critical_count=int(kpi.get("critical_count", 0)),
     )
-    render_footer()
+    render_footer(synthetic=settings.is_synthetic)
 
     # 13) Audit summary event
     summary = {
