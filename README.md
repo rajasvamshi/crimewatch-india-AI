@@ -184,12 +184,30 @@ source .venv/bin/activate
 #### 3️⃣ Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt        # add -dev to also get test tools
 ```
 
 ---
 
-#### 4️⃣ Run the Streamlit Application
+#### 4️⃣ Choose how people sign in
+
+By default the app requires a login. Create the first administrator:
+
+```bash
+python scripts/manage_users.py add admin --role admin
+```
+
+For a quick look on your own laptop only, you can skip login:
+
+```bash
+export CW_AUTH_MODE=none   # Windows PowerShell: $env:CW_AUTH_MODE="none"
+```
+
+See [Configuration & Security](#-configuration--security) for SSO and production settings.
+
+---
+
+#### 5️⃣ Run the Streamlit Application
 
 ```bash
 streamlit run app/dashboard.py
@@ -197,13 +215,76 @@ streamlit run app/dashboard.py
 
 ---
 
-#### 5️⃣ Open the Application in Your Browser
+#### 6️⃣ Open the Application in Your Browser
 
 ```
 http://localhost:8501
 ```
 
 Once launched, the **CrimeWatch AI dashboard** will automatically open in your browser.
+
+---
+
+# 🔐 Configuration & Security
+
+All settings come from environment variables (copy `.env.example`). The most important:
+
+| Variable | Values | Default |
+|---|---|---|
+| `CW_APP_ENV` | `development` / `production` | `development` |
+| `CW_AUTH_MODE` | `oidc` (government SSO) / `local` / `none` | `local` |
+| `CW_DATA_SOURCE` | `file` (real NCRB data) / `synthetic` (random demo) | `file` |
+| `CW_DATA_PATH` | validated CSV or Parquet | `data/processed/dashboard_dataset.parquet` |
+| `CW_AUDIT_LOG_PATH` | JSON-lines audit trail | `logs/audit.jsonl` |
+
+**Roles**
+
+| Role | Can do |
+|---|---|
+| viewer | See dashboards for assigned states |
+| analyst | + export data, download reports |
+| supervisor | + Live Pulse simulation, model governance |
+| admin | + bulk-export override, everything |
+
+**Production** (`CW_APP_ENV=production`) refuses to start without authentication and turns the
+Live Pulse simulation off. For SSO, copy `.streamlit/secrets.toml.example` to
+`.streamlit/secrets.toml`, fill in your identity provider, and set `CW_AUTH_MODE=oidc`.
+Map SSO e-mails to roles and states in `config/users.json` (see `config/users.example.json`).
+
+**Docker**
+
+```bash
+docker compose run --rm crimewatch python scripts/manage_users.py add admin --role admin
+docker compose up --build        # http://localhost:8501
+```
+
+**Tests**
+
+```bash
+pip install -r requirements-dev.txt
+pytest                # unit + headless app smoke tests
+ruff check src/crimewatch scripts tests
+```
+
+**Data**
+
+The app now runs on real NCRB district statistics (2017–2022, 36 states/UTs, 10 crime groups)
+from `data/processed/dashboard_dataset.parquet`. Rebuild it from the master table with
+`python -m src.crimewatch.etl_dashboard`; the mapping from NCRB heads to the 10 groups is
+documented in `src/crimewatch/etl_dashboard.py`, and `dashboard_dataset.provenance.json`
+records the source hash for every build.
+
+**Live feed API** (for police data partners)
+
+```bash
+python scripts/manage_api_keys.py add ts-police --scopes ingest --states Telangana
+uvicorn src.crimewatch.api:app --port 8000     # docs at /docs outside production
+```
+
+Partners `POST /v1/ingest/daily` aggregate daily counts (no personal data). The dashboard shows
+them in a separate "Live Feed" panel, kept apart from official annual statistics.
+
+See [SECURITY.md](SECURITY.md) for the full security model.
 
 ---
 
@@ -279,16 +360,23 @@ The dataset represents **aggregated crime statistics across Indian states and di
 
 ## Dataset Coverage
 
-- **30 States / Union Territories** (29 states + Delhi)
-- **766+ Districts**
-- **10 Crime Categories**
-- **6 Years of data (2017–2022)**
+| Layer | What | Years | Updated | Where |
+|---|---|---|---|---|
+| District analytics | NCRB district tables, 36 States/UTs, ~795 districts, 10 categories | 2017–2022 | when NCRB publishes district tables | `data/processed/dashboard_dataset.parquet` |
+| Latest official totals | NCRB *Crime in India*: all-India 2022–2024, 19 metro cities 2023–2024, 36 States/UTs 2023 | 2022–2024 | yearly (CII 2024 released May 2026) | `data/processed/ncrb_official_totals.csv` (sources in `data/reference/ncrb_cii/sources.json`) |
+| Police announcements | Delhi Police daily press releases: date, district/unit, police station, category, PDF link | rolling | daily (`.github/workflows/delhi-police-daily.yml`) | `data/public/delhi_police_announcements.csv` |
+| Live partner feed | Daily counts pushed by authorised police partners via `POST /v1/ingest/daily` | rolling | as sent | `data/live/live.db` |
 
-⚠️ **Note**
+**What "daily" means here.** India has no public, nationwide, daily crime-count feed: NCRB
+publishes once a year, and CCTNS/ERSS data are available only to police under agreement.
+Delhi Police press releases are the most frequent public, location-tagged official signal, so
+they are shown as *announcements* (cases police chose to publicise), never as crime counts.
+Other states can be added the same way where their police publish structured releases.
 
-This demo uses **synthetic data for portability**.
-
-Production deployments should integrate **validated NCRB datasets and official crime reporting pipelines**.
+Refresh the official totals: `python scripts/fetch_ncrb_cii.py` (needs network access to
+NCRB), save NCRB Table 1A.1 as `data/raw/ncrb_cii/cii<year>_table_1a1.csv`, then
+`python -m src.crimewatch.ncrb_official`. The build refuses to write if State/UT rows do not
+add up to the all-India total.
 
 ---
 
@@ -344,7 +432,6 @@ Planned enhancements include:
 - Real-time data ingestion pipelines
 
 ### Platform Enhancements
-- Role-based user authentication
 - Mobile-responsive interface for field officers
 - Export to PDF / PowerPoint reports
 

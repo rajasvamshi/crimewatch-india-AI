@@ -1,0 +1,31 @@
+# Hardened Streamlit defaults for CrimeWatch India.
+# Secrets (OIDC client secret, cookie secret) go in .streamlit/secrets.toml, which is git-ignored.
+
+[server]
+headless = true
+enableXsrfProtection = true   # never disable in any environment
+enableCORS = true
+maxUploadSize = 5             # MB; the app takes no uploads today
+runOnSave = false
+
+[browser]
+gatherUsageStats = false      # no telemetry leaves government infrastructure
+
+[client]
+showErrorDetails = false      # stack traces stay in server logs, not in the browser
+toolbarMode = "minimal"
+
+[runner]
+magicEnabled = false
+
+[logger]
+level = "info"
+
+[theme]
+# The HUD stylesheet paints a near-black background, so widgets must use the dark base
+# theme; with the light base, labels and captions render dark-grey on black (fails WCAG contrast).
+base = "dark"
+textColor = "#E2E8F0"
+backgroundColor = "#020205"
+secondaryBackgroundColor = "#0F172A"
+primaryColor = "#38BDF8"

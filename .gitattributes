@@ -1,1 +1,6 @@
 *.csv filter=lfs diff=lfs merge=lfs -text
+# Small, human-readable data files are stored directly in git (not LFS) so Streamlit Cloud
+# and GitHub Actions can read them without an LFS download.
+data/reference/** -filter -diff -merge text
+data/public/*.csv -filter -diff -merge text
+data/processed/ncrb_official_totals.csv -filter -diff -merge text

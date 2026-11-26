@@ -1,0 +1,39 @@
+name: Delhi Police announcements (daily)
+
+# Reads the official Delhi Police press-release index once a day and commits the
+# de-identified index (date, district, police station, category, PDF link) to
+# data/public/delhi_police_announcements.csv, which the public dashboard reads.
+on:
+  schedule:
+    - cron: "30 15 * * *"   # 21:00 IST, after most releases for the day are up
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: delhi-police-daily
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Fetch press releases (last 3 days)
+        run: python -m src.crimewatch.delhi_police --days 3 --db /tmp/live.db --csv data/public/delhi_police_announcements.csv
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- data/public; then echo "no new releases"; exit 0; fi
+          git config user.name "crimewatch-data-bot"
+          git config user.email "crimewatch-data-bot@users.noreply.github.com"
+          git add data/public/delhi_police_announcements.csv
+          git commit -m "data: Delhi Police announcements $(date -u +%F)"
+          git push
