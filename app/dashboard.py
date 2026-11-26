@@ -28,6 +28,9 @@ from src.crimewatch.data_source import DataValidationError, load_dashboard_file 
 from src.crimewatch.settings import SettingsError  # noqa: E402
 from src.crimewatch import ui_auth  # noqa: E402
 from src.crimewatch.live_store import LiveStore  # noqa: E402
+from src.crimewatch import ncrb_official  # noqa: E402
+from src.crimewatch.delhi_police import NOT_CRIME as ANNOUNCEMENT_NOT_CRIME  # noqa: E402
+from src.crimewatch.delhi_police import PUBLIC_CSV as DELHI_POLICE_CSV  # noqa: E402
 
 # NOTE: the former module-level st.cache_data.clear() ran on every rerun (every click),
 # which disabled all caching and retrained every model per interaction. Removed.
@@ -1173,6 +1176,132 @@ def render_live_feed(user_states: Optional[Tuple[str, ...]]) -> None:
         )
         st.dataframe(by_cat.rename(columns={"category": "Category", "crime_count": "Cases (30 days)"}),
                      use_container_width=True, hide_index=True)
+
+
+@st.cache_data(show_spinner=False, ttl=3600)
+def load_official_totals(path: str, _mtime: float) -> Tuple[pd.DataFrame, Dict[str, Any]]:
+    p = Path(path)
+    return ncrb_official.load(p), ncrb_official.load_provenance(p)
+
+
+def render_official_latest(user_states: Optional[Tuple[str, ...]]) -> None:
+    """Newest NCRB annual-report totals (national 2024, metros 2024, states 2023).
+
+    Shown on their own because the district analytics below stop at the last year NCRB
+    has published district tables for; the two are never summed together."""
+    path = ncrb_official.OUT_PATH
+    df, prov = load_official_totals(str(path), path.stat().st_mtime if path.exists() else 0.0)
+    if df.empty:
+        return
+    nat = df[df["level"] == "national"].sort_values("year")
+    metro = df[df["level"] == "metro_aggregate"].sort_values("year")
+    states = df[df["level"] == "state"]
+    latest_state_year = int(states["year"].max()) if not states.empty else None
+    st.markdown('<div class="section-header">🏛️ Latest official figures (NCRB Crime in India)</div>',
+                unsafe_allow_html=True)
+    cols = st.columns(4)
+    if len(nat) >= 1:
+        last = nat.iloc[-1]
+        prev = nat.iloc[-2] if len(nat) >= 2 else None
+        delta = None if prev is None else f"{(last.total_cases / prev.total_cases - 1) * 100:+.1f}% vs {int(prev.year)}"
+        cols[0].metric(f"All-India cognizable crimes, {int(last.year)}", f"{int(last.total_cases):,}", delta,
+                       delta_color="inverse")
+        cols[1].metric(f"Crime rate per lakh, {int(last.year)}", f"{last.crime_rate:.1f}",
+                       None if prev is None else f"{last.crime_rate - prev.crime_rate:+.1f}", delta_color="inverse")
+        if pd.notna(last.ipc_bns_cases):
+            cols[2].metric(f"IPC/BNS · SLL, {int(last.year)}",
+                           f"{int(last.ipc_bns_cases) / 1e5:.2f}L · {int(last.sll_cases) / 1e5:.2f}L")
+    if not metro.empty:
+        m = metro.iloc[-1]
+        mprev = metro.iloc[-2] if len(metro) >= 2 else None
+        cols[3].metric(f"19 metro cities, {int(m.year)}", f"{int(m.total_cases):,}",
+                       None if mprev is None else f"{(m.total_cases / mprev.total_cases - 1) * 100:+.1f}%",
+                       delta_color="inverse")
+    if latest_state_year:
+        sv = states[states["year"] == latest_state_year]
+        if user_states is not None:
+            sv = sv[sv["name"].isin(user_states)]
+        if not sv.empty:
+            sv = sv.sort_values("crime_rate", ascending=True)
+            fig = px.bar(sv, x="crime_rate", y="name", orientation="h",
+                         hover_data={"total_cases": ":,", "chargesheet_rate": True},
+                         title=f"Crime rate per lakh population by State/UT, {latest_state_year}",
+                         labels={"crime_rate": "Cognizable crimes per lakh", "name": ""})
+            fig.update_layout(height=max(320, 18 * len(sv)))
+            st.plotly_chart(apply_tactical_theme(fig), use_container_width=True)
+    tiers = prov.get("sources", {})
+    notes = [f"{m.get('publication')} ({'NCRB publication' if m.get('tier') == 'primary' else 'NCRB table via ' + m.get('url', '')})"
+             for m in tiers.values()]
+    pending = prov.get("not_yet_loaded", [])
+    st.caption(
+        "Sources: " + "; ".join(notes) + ". Annual, official, released about a year after the period."
+        + (" Not yet loaded: " + "; ".join(pending) + "." if pending else "")
+    )
+
+
+@st.cache_data(show_spinner=False, ttl=300)
+def load_announcements(db_path: str, _mtime: float) -> Tuple[pd.DataFrame, Dict[str, Any]]:
+    p = Path(db_path)
+    if p.exists():
+        store = LiveStore(p)
+        status = store.announcements_status()
+        if status["releases"]:
+            return store.announcements_frame(), status
+    # Public deployment: the daily GitHub Action commits the scraped index as CSV.
+    csv = DELHI_POLICE_CSV
+    if not csv.exists():
+        return pd.DataFrame(), {"releases": 0}
+    df = pd.read_csv(csv)
+    return df, {"releases": len(df), "latest_day": df["day"].max(),
+                "last_fetched": pd.Timestamp(csv.stat().st_mtime, unit="s").strftime("%Y-%m-%d %H:%M")}
+
+
+def render_police_announcements(user_states: Optional[Tuple[str, ...]]) -> None:
+    """Daily police press releases. Announcements, NOT crime counts."""
+    db = ui_auth.get_settings().live_db_path
+    mt = max(db.stat().st_mtime if db.exists() else 0.0,
+             DELHI_POLICE_CSV.stat().st_mtime if DELHI_POLICE_CSV.exists() else 0.0)
+    ann, status = load_announcements(str(db), mt)
+    if ann.empty:
+        return
+    if user_states is not None:
+        ann = ann[ann["state_name"].isin(user_states)]
+    if ann.empty:
+        return
+    ann = ann.assign(day=pd.to_datetime(ann["day"]))
+    recent = ann[ann["day"] >= ann["day"].max() - pd.Timedelta(days=29)]
+    crime = recent[~recent["category"].isin(ANNOUNCEMENT_NOT_CRIME)]
+    st.markdown('<div class="section-header">📰 Police announcements, Delhi (last 30 days)</div>',
+                unsafe_allow_html=True)
+    st.caption(
+        f"{int(status.get('releases', 0)):,} official Delhi Police press releases · latest {status.get('latest_day')} · "
+        f"fetched {status.get('last_fetched')} UTC. These are cases the police chose to publicise (mostly arrests "
+        "and recoveries), not the number of crimes. Categories are assigned from the release title by keyword."
+    )
+    c1, c2, c3 = st.columns([2, 2, 1])
+    with c1:
+        by_dist = crime.groupby("district_name", as_index=False).size().sort_values("size")
+        fig = px.bar(by_dist, x="size", y="district_name", orientation="h", title="Crime-related releases by district",
+                     labels={"size": "Releases", "district_name": ""})
+        st.plotly_chart(apply_tactical_theme(fig), use_container_width=True)
+    with c2:
+        by_cat = crime.groupby("category", as_index=False).size().sort_values("size", ascending=False)
+        st.dataframe(by_cat.rename(columns={"category": "Category", "size": "Releases (30 days)"}),
+                     use_container_width=True, hide_index=True)
+    with c3:
+        st.metric("Releases today", int((recent["day"] == recent["day"].max()).sum()))
+        st.metric("Missing persons traced", int(recent["category"].eq("Missing persons traced").sum()))
+    latest = recent.sort_values("day", ascending=False).head(15)[
+        ["day", "district_name", "police_station", "category", "release_url"]]
+    st.dataframe(
+        latest.assign(day=latest["day"].dt.date, police_station=latest["police_station"].fillna("")),
+        column_config={
+            "day": "Date", "district_name": "District / unit", "police_station": "Police station",
+            "category": "Category",
+            "release_url": st.column_config.LinkColumn("Official release", display_text="Open PDF"),
+        },
+        use_container_width=True, hide_index=True,
+    )
 
 
 @st.cache_data(show_spinner=False, ttl=3600)
@@ -4106,6 +4235,8 @@ def main() -> None:
 
     # Live feed (near-real-time partner data; separate from annual analytics)
     if not settings.is_synthetic:
+        render_official_latest(user.states)
+        render_police_announcements(user.states)
         render_live_feed(user.states)
 
     # 6) Intelligence briefing + Warning panel

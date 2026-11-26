@@ -1,0 +1,36 @@
+{
+  "description": "Official NCRB 'Crime in India' (CII) totals used by the dashboard's 'Latest official figures' panel. Each file lists where every number came from. Tier 'primary' = read from the NCRB publication itself; tier 'secondary' = an NCRB table as republished elsewhere, kept only until the primary table is downloaded (scripts/fetch_ncrb_cii.py).",
+  "files": {
+    "cii_all_india_totals.csv": {
+      "level": "national",
+      "tier": "primary",
+      "publication": "Crime in India 2024, Volume I, Table 1.1 (Incidence and Rate of Cognizable Crimes, 2022-2024)",
+      "publisher": "National Crime Records Bureau, Ministry of Home Affairs",
+      "url": "https://www.ncrb.mha.gov.in/uploads/files/11CrimeinIndia2024-VolumeI.pdf",
+      "retrieved": "2026-11-25",
+      "checks": "ipc_bns_cases + sll_cases == total_cases for every year"
+    },
+    "cii_metro_totals.csv": {
+      "level": "metro_aggregate",
+      "tier": "primary",
+      "publication": "Crime in India 2024, Volume I, 'Snapshot' summary of Tables 1B.1-1B.2 (19 metropolitan cities, population above 2 million)",
+      "publisher": "National Crime Records Bureau, Ministry of Home Affairs",
+      "url": "https://www.ncrb.mha.gov.in/uploads/files/11CrimeinIndia2024-VolumeI.pdf",
+      "retrieved": "2026-11-25",
+      "checks": "2024: 593096 + 247809 == 840905. City-by-city rows (Table 1B.1) not yet loaded."
+    },
+    "cii2023_state_totals.csv": {
+      "level": "state",
+      "tier": "secondary",
+      "publication": "Crime in India 2023, Volumes I-III (state/UT totals, crime rate, charge-sheet and conviction rates, head-wise rates)",
+      "publisher": "National Crime Records Bureau, Ministry of Home Affairs",
+      "url": "https://en.wikipedia.org/wiki/List_of_states_and_union_territories_of_India_by_crime_rate",
+      "retrieved": "2026-11-25",
+      "checks": "Sum of the 36 state/UT totals == 6241569 == all-India total in CII 2024 Table 1.1 (2023 column). Replace with NCRB Table 1A.1 when downloaded."
+    }
+  },
+  "not_yet_loaded": [
+    "Crime in India 2024 state/UT table (Table 1A.1): NCRB site not reachable from the build environment on 2026-11-25",
+    "Crime in India 2023 and 2024 metropolitan city-wise rows (Table 1B.1)"
+  ]
+}

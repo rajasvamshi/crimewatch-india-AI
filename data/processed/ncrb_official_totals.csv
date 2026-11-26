@@ -1,0 +1,42 @@
+year,level,name,total_cases,ipc_bns_cases,sll_cases,crime_rate,chargesheet_rate,source_file,source_tier
+2022,national,India,5824946,3561379.0,2263567.0,422.2,,cii_all_india_totals.csv,primary
+2023,metro_aggregate,19 metropolitan cities,944291,,,,,cii_metro_totals.csv,primary
+2023,national,India,6241569,3763102.0,2478467.0,448.3,,cii_all_india_totals.csv,primary
+2023,state,Andaman And Nicobar Islands,1873,,,464.8,94.9,cii2023_state_totals.csv,secondary
+2023,state,Andhra Pradesh,184293,,,346.3,92.8,cii2023_state_totals.csv,secondary
+2023,state,Arunachal Pradesh,2941,,,187.9,57.8,cii2023_state_totals.csv,secondary
+2023,state,Assam,64959,,,181.3,52.6,cii2023_state_totals.csv,secondary
+2023,state,Bihar,353502,,,277.5,83.5,cii2023_state_totals.csv,secondary
+2023,state,Chandigarh,4185,,,338.9,65.4,cii2023_state_totals.csv,secondary
+2023,state,Chhattisgarh,115493,,,381.2,88.7,cii2023_state_totals.csv,secondary
+2023,state,Dadra And Nagar Haveli And Daman And Diu,865,,,66.9,60.4,cii2023_state_totals.csv,secondary
+2023,state,Delhi,344263,,,1602.0,32.8,cii2023_state_totals.csv,secondary
+2023,state,Goa,3082,,,195.4,79.8,cii2023_state_totals.csv,secondary
+2023,state,Gujarat,578879,,,806.3,96.5,cii2023_state_totals.csv,secondary
+2023,state,Haryana,224216,,,739.2,65.0,cii2023_state_totals.csv,secondary
+2023,state,Himachal Pradesh,19987,,,267.2,86.6,cii2023_state_totals.csv,secondary
+2023,state,Jammu And Kashmir,29595,,,217.0,81.0,cii2023_state_totals.csv,secondary
+2023,state,Jharkhand,63838,,,161.1,69.6,cii2023_state_totals.csv,secondary
+2023,state,Karnataka,214234,,,315.8,76.9,cii2023_state_totals.csv,secondary
+2023,state,Kerala,584373,,,1631.2,97.9,cii2023_state_totals.csv,secondary
+2023,state,Ladakh,522,,,173.4,87.6,cii2023_state_totals.csv,secondary
+2023,state,Lakshadweep,127,,,184.1,65.4,cii2023_state_totals.csv,secondary
+2023,state,Madhya Pradesh,495708,,,570.3,91.2,cii2023_state_totals.csv,secondary
+2023,state,Maharashtra,596103,,,470.4,82.2,cii2023_state_totals.csv,secondary
+2023,state,Manipur,20283,,,627.8,37.4,cii2023_state_totals.csv,secondary
+2023,state,Meghalaya,3532,,,105.2,39.0,cii2023_state_totals.csv,secondary
+2023,state,Mizoram,4050,,,326.3,61.0,cii2023_state_totals.csv,secondary
+2023,state,Nagaland,1899,,,84.9,67.6,cii2023_state_totals.csv,secondary
+2023,state,Odisha,199954,,,431.2,80.6,cii2023_state_totals.csv,secondary
+2023,state,Puducherry,5065,,,305.5,95.7,cii2023_state_totals.csv,secondary
+2023,state,Punjab,69944,,,227.1,73.7,cii2023_state_totals.csv,secondary
+2023,state,Rajasthan,317480,,,390.4,61.5,cii2023_state_totals.csv,secondary
+2023,state,Sikkim,718,,,103.9,63.1,cii2023_state_totals.csv,secondary
+2023,state,Tamil Nadu,539651,,,701.4,85.7,cii2023_state_totals.csv,secondary
+2023,state,Telangana,183644,,,481.6,77.4,cii2023_state_totals.csv,secondary
+2023,state,Tripura,5002,,,120.4,80.4,cii2023_state_totals.csv,secondary
+2023,state,Uttar Pradesh,793020,,,335.3,73.7,cii2023_state_totals.csv,secondary
+2023,state,Uttarakhand,34017,,,291.3,83.5,cii2023_state_totals.csv,secondary
+2023,state,West Bengal,180272,,,181.6,88.9,cii2023_state_totals.csv,secondary
+2024,metro_aggregate,19 metropolitan cities,840905,593096.0,247809.0,,53.0,cii_metro_totals.csv,primary
+2024,national,India,5885867,3544608.0,2341259.0,418.9,,cii_all_india_totals.csv,primary

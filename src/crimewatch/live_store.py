@@ -37,7 +37,35 @@ CREATE TABLE IF NOT EXISTS daily_counts (
     received_at   TEXT    NOT NULL,
     PRIMARY KEY (day, state_name, district_name, category, source)
 );
+
+-- Public police announcements (press releases) scraped from official police websites.
+-- These are NOT crime counts: police publicise selected cases (mostly arrests and
+-- recoveries), so they are kept in their own table and never added to daily_counts.
+-- Only the release date, police district/unit, police station, a derived category and
+-- the official release URL are stored: no titles, names, addresses or FIR details.
+CREATE TABLE IF NOT EXISTS announcements (
+    release_id     TEXT    PRIMARY KEY,
+    day            TEXT    NOT NULL,
+    state_name     TEXT    NOT NULL,
+    district_name  TEXT    NOT NULL,
+    police_station TEXT,
+    category       TEXT    NOT NULL,
+    release_url    TEXT    NOT NULL,
+    source         TEXT    NOT NULL,
+    fetched_at     TEXT    NOT NULL
+);
 """
+
+
+@dataclass(frozen=True)
+class Announcement:
+    release_id: str
+    day: date
+    state_name: str
+    district_name: str
+    police_station: str | None
+    category: str
+    release_url: str
 
 
 @dataclass(frozen=True)
@@ -89,6 +117,35 @@ class LiveStore:
                 "SELECT COUNT(*), MAX(day), MAX(received_at), COUNT(DISTINCT source) FROM daily_counts"
             ).fetchone()
         return {"records": n, "latest_day": last_day, "last_received": last_received, "sources": sources}
+
+
+    # -- police announcements ------------------------------------------------------------
+    def upsert_announcements(self, rows: Iterable[Announcement], source: str) -> int:
+        """Insert new releases; a re-scrape of the same release just refreshes it."""
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        data = [
+            (a.release_id, a.day.isoformat(), a.state_name, a.district_name, a.police_station, a.category,
+             a.release_url, source, now)
+            for a in rows
+        ]
+        with self._lock, self._connect() as con:
+            con.executemany(
+                "INSERT OR REPLACE INTO announcements (release_id, day, state_name, district_name, "
+                "police_station, category, release_url, source, fetched_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                data,
+            )
+        return len(data)
+
+    def announcements_frame(self) -> pd.DataFrame:
+        with self._connect() as con:
+            return pd.read_sql_query("SELECT * FROM announcements", con)
+
+    def announcements_status(self) -> dict:
+        with self._connect() as con:
+            n, first, last, fetched, sources = con.execute(
+                "SELECT COUNT(*), MIN(day), MAX(day), MAX(fetched_at), COUNT(DISTINCT source) FROM announcements"
+            ).fetchone()
+        return {"releases": n, "first_day": first, "latest_day": last, "last_fetched": fetched, "sources": sources}
 
 
 def to_dashboard_rows(live: pd.DataFrame, after_year: int) -> pd.DataFrame:

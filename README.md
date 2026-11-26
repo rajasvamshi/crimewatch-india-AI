@@ -360,16 +360,23 @@ The dataset represents **aggregated crime statistics across Indian states and di
 
 ## Dataset Coverage
 
-- **30 States / Union Territories** (29 states + Delhi)
-- **766+ Districts**
-- **10 Crime Categories**
-- **6 Years of data (2017–2022)**
+| Layer | What | Years | Updated | Where |
+|---|---|---|---|---|
+| District analytics | NCRB district tables, 36 States/UTs, ~795 districts, 10 categories | 2017–2022 | when NCRB publishes district tables | `data/processed/dashboard_dataset.parquet` |
+| Latest official totals | NCRB *Crime in India*: all-India 2022–2024, 19 metro cities 2023–2024, 36 States/UTs 2023 | 2022–2024 | yearly (CII 2024 released May 2026) | `data/processed/ncrb_official_totals.csv` (sources in `data/reference/ncrb_cii/sources.json`) |
+| Police announcements | Delhi Police daily press releases: date, district/unit, police station, category, PDF link | rolling | daily (`.github/workflows/delhi-police-daily.yml`) | `data/public/delhi_police_announcements.csv` |
+| Live partner feed | Daily counts pushed by authorised police partners via `POST /v1/ingest/daily` | rolling | as sent | `data/live/live.db` |
 
-⚠️ **Note**
+**What "daily" means here.** India has no public, nationwide, daily crime-count feed: NCRB
+publishes once a year, and CCTNS/ERSS data are available only to police under agreement.
+Delhi Police press releases are the most frequent public, location-tagged official signal, so
+they are shown as *announcements* (cases police chose to publicise), never as crime counts.
+Other states can be added the same way where their police publish structured releases.
 
-This demo uses **synthetic data for portability**.
-
-Production deployments should integrate **validated NCRB datasets and official crime reporting pipelines**.
+Refresh the official totals: `python scripts/fetch_ncrb_cii.py` (needs network access to
+NCRB), save NCRB Table 1A.1 as `data/raw/ncrb_cii/cii<year>_table_1a1.csv`, then
+`python -m src.crimewatch.ncrb_official`. The build refuses to write if State/UT rows do not
+add up to the all-India total.
 
 ---
 
