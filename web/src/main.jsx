@@ -8,10 +8,11 @@ import LiveMap from './pages/LiveMap.jsx';
 import Trends from './pages/Trends.jsx';
 import About from './pages/About.jsx';
 import Intel from './pages/Intel.jsx';
+import Prevent from './pages/Prevent.jsx';
 import Intro from './components/Intro.jsx';
 import { useSpotlight } from './motion.js';
 
-const ROUTES = ['home', 'map', 'intel', 'trends', 'about'];
+const ROUTES = ['home', 'map', 'intel', 'prevent', 'trends', 'about'];
 const parse = () => {
   const [r, q] = window.location.hash.replace(/^#\/?/, '').split('?q=');
   return { route: ROUTES.includes(r) ? r : 'home', q: q ? decodeURIComponent(q) : '' };
@@ -54,6 +55,7 @@ function App() {
       {route === 'home' && <main id="main"><Home go={go} /></main>}
       {route === 'map' && <main id="main"><LiveMap key={q} query={q} /></main>}
       {route === 'intel' && <Intel go={go} />}
+      {route === 'prevent' && <Prevent go={go} />}
       {route === 'trends' && <Trends />}
       {route === 'about' && <About />}
       {route !== 'map' && (

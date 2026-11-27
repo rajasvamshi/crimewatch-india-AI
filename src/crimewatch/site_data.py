@@ -20,7 +20,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from . import gdelt_feed, ncrb_official
+from . import gdelt_feed, ncrb_official, prevent
 from .delhi_police import NOT_CRIME, PoliteFetcher, classify, crawl
 
 # Approximate centre of each Delhi Police district / unit headquarters (lat, lon).
@@ -48,6 +48,21 @@ def _load_previous(src: str | None) -> list[dict]:
         return json.loads(p.read_text())["incidents"] if p.exists() else []
     except (OSError, ValueError, KeyError):
         return []
+
+
+def _load_json(src: str | None, default):
+    """A JSON file from the published site (URL) or disk; `default` when missing."""
+    if not src:
+        return default
+    try:
+        if src.startswith("http"):
+            req = urllib.request.Request(src, headers={"User-Agent": gdelt_feed.USER_AGENT})  # noqa: S310
+            with urllib.request.urlopen(req, timeout=60) as r:  # noqa: S310  # nosec B310
+                return json.loads(r.read())
+        p = Path(src)
+        return json.loads(p.read_text()) if p.exists() else default
+    except (OSError, ValueError):
+        return default
 
 
 def delhi_incidents(days: int) -> list[dict]:
@@ -113,6 +128,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--keep-days", type=int, default=30)
     ap.add_argument("--no-delhi", action="store_true")
     ap.add_argument("--max-hours", type=float, default=48.0, help="cap on catch-up after a gap")
+    ap.add_argument("--site", default="https://rajasvamshi.github.io/crimewatch-india-AI/", help="public site URL")
     a = ap.parse_args(argv)
 
     now = datetime.now(timezone.utc)
@@ -146,6 +162,11 @@ def main(argv: list[str] | None = None) -> int:
     (a.out / "summary.json").write_text(json.dumps(summarise(incidents, now), ensure_ascii=False, indent=1))
     (a.out / "official.json").write_text(json.dumps(official(), ensure_ascii=False, indent=1))
     (a.out / "meta.json").write_text(json.dumps(meta, indent=1))
+    history = _load_json(a.previous.replace("incidents.json", "forecast_history.json") if a.previous else None, [])
+    prev_out, hist, feed = prevent.build(incidents, history, now, a.site)
+    (a.out / "prevent.json").write_text(json.dumps(prev_out, ensure_ascii=False, separators=(",", ":")))
+    (a.out / "forecast_history.json").write_text(json.dumps(hist, separators=(",", ":")))
+    (a.out / "alerts.xml").write_text(feed)
     print(f"{len(news)} new news, {len(police)} police, {len(incidents)} incidents kept "
           f"(window {start:%Y-%m-%d %H:%M} to {now:%H:%M} UTC)")
     return 0
