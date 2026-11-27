@@ -35,9 +35,10 @@ export default function Home({ go }) {
   const [inc] = useJson('incidents.json');
   const [sum] = useJson('summary.json');
   const [off] = useJson('official.json');
+  const [pv] = useJson('prevent.json');
   const [q, setQ] = useState('');
   const clockT = useClock(true);
-  useReveal([!!inc, !!off]);
+  useReveal([!!inc, !!off, !!pv]);
 
   const now = inc ? Date.parse(inc.generated_at) : 0;
   const all = useMemo(() => (inc ? spread(inc.incidents).map((d, k) => ({ ...d, phase: (k * 0.618) % 1 })) : []), [inc]);
@@ -208,6 +209,37 @@ export default function Home({ go }) {
           </button>
         </div>
       </section>
+
+      {/* ================= PREVENT TEASER ================= */}
+      {pv && (
+        <section className="section" aria-labelledby="pv-title" style={{ paddingTop: 0 }}>
+          <div className="reveal"><div className="eyebrow">{t('pv_eyebrow')}</div>
+            <h2 id="pv-title" className="display">{t('pv_teaser_t')}</h2><p className="sub">{t('pv_teaser_s')}</p></div>
+          <div className="bento">
+            {pv.scams[0] && (
+              <button className="tile spot tilt reveal" onClick={() => go('prevent')}>
+                <div className="tile-k">{t('pv_scam_t')}</div>
+                <div className="tile-n">{pv.scams[0].type}</div>
+                <div className="tile-s">{pv.scams[0].this_week} {t('pv_this_week')} · {t(`tr_${pv.scams[0].trend}`)}</div>
+              </button>)}
+            {pv.forecast[0] && (
+              <button className="tile spot tilt reveal" onClick={() => go('prevent')}>
+                <div className="tile-k">{t('pv_fc_t')}</div>
+                <div className="tile-n">{pv.forecast[0].name.split(',')[0]}</div>
+                <div className="tile-s">{t(`lv_${pv.forecast[0].level}`)} · {cat(pv.forecast[0].top_category)}</div>
+              </button>)}
+            <button className="tile spot tilt reveal" onClick={() => go('prevent')}>
+              <div className="tile-k">{t('pv_audit_t')}</div>
+              <div className="tile-n mono">2 min</div>
+              <div className="tile-s">{t('pv_audit_s')}</div>
+            </button>
+            <button className="tile spot tilt reveal accent" onClick={() => go('prevent')}>
+              <div className="tile-k">{t('nav_prevent')}</div>
+              <div className="tile-n">{t('pv_open')} →</div>
+              <div className="tile-s">112 · 1930 · 181 · 1098</div>
+            </button>
+          </div>
+        </section>)}
 
       {/* ================= OFFICIAL FACTS ================= */}
       <section className="section" aria-labelledby="facts-title" style={{ paddingTop: 0 }}>
