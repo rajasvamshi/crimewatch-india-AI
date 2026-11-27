@@ -1,60 +1,56 @@
 {
- "generated_at": "2026-11-27T05:09:47Z",
- "total": 1864,
- "last_24h": 890,
- "states_last_24h": 28,
+ "generated_at": "2026-11-27T05:13:33Z",
+ "total": 731,
+ "last_24h": 366,
+ "states_last_24h": 25,
  "by_category": [
   [
    "Murder",
-   764
-  ],
-  [
-   "Drug Offense",
-   216
-  ],
-  [
-   "Sexual violence",
-   176
-  ],
-  [
-   "Assault",
-   161
-  ],
-  [
-   "Cyber Crime",
-   159
+   220
   ],
   [
    "Fraud",
-   129
+   99
   ],
   [
-   "Kidnapping",
-   94
+   "Assault",
+   95
+  ],
+  [
+   "Sexual violence",
+   80
+  ],
+  [
+   "Drug Offense",
+   70
+  ],
+  [
+   "Cyber Crime",
+   51
   ],
   [
    "Robbery",
-   92
-  ],
-  [
-   "Domestic Violence",
-   25
+   35
   ],
   [
    "Theft",
-   25
+   31
+  ],
+  [
+   "Kidnapping",
+   28
   ],
   [
    "Snatching",
-   8
+   7
+  ],
+  [
+   "Domestic Violence",
+   5
   ],
   [
    "Burglary",
-   6
-  ],
-  [
-   "Arson",
-   3
+   4
   ],
   [
    "Arms Act",
@@ -72,43 +68,39 @@
  "by_category_24h": [
   [
    "Murder",
-   362
-  ],
-  [
-   "Drug Offense",
-   88
-  ],
-  [
-   "Assault",
-   86
-  ],
-  [
-   "Cyber Crime",
-   76
-  ],
-  [
-   "Sexual violence",
-   73
+   111
   ],
   [
    "Fraud",
-   73
+   57
   ],
   [
-   "Kidnapping",
-   50
+   "Assault",
+   45
+  ],
+  [
+   "Sexual violence",
+   39
+  ],
+  [
+   "Drug Offense",
+   29
+  ],
+  [
+   "Cyber Crime",
+   26
   ],
   [
    "Robbery",
-   43
+   20
   ],
   [
    "Theft",
-   17
+   20
   ],
   [
-   "Domestic Violence",
-   15
+   "Kidnapping",
+   11
   ],
   [
    "Burglary",
@@ -121,289 +113,282 @@
   [
    "Other crime",
    2
+  ],
+  [
+   "Domestic Violence",
+   1
   ]
  ],
  "by_state": [
   [
    "Delhi",
-   314
+   138
   ],
   [
    "Maharashtra",
-   237
+   91
   ],
   [
    "Uttar Pradesh",
-   127
-  ],
-  [
-   "Kerala",
-   115
-  ],
-  [
-   "Gujarat",
-   112
+   76
   ],
   [
    "Karnataka",
-   108
+   41
+  ],
+  [
+   "Kerala",
+   39
   ],
   [
    "Madhya Pradesh",
-   103
+   38
   ],
   [
-   "Andhra Pradesh",
-   96
-  ],
-  [
-   "Tamil Nadu",
-   89
-  ],
-  [
-   "Bihar",
-   75
-  ],
-  [
-   "West Bengal",
-   59
-  ],
-  [
-   "Orissa",
-   56
-  ],
-  [
-   "India (General)",
-   53
-  ],
-  [
-   "Rajasthan",
-   48
-  ],
-  [
-   "Assam",
-   45
-  ],
-  [
-   "Haryana",
-   45
-  ],
-  [
-   "Punjab",
+   "Gujarat",
    34
   ],
   [
-   "Chhattisgarh",
+   "Assam",
    33
   ],
   [
-   "Jammu And Kashmir",
-   30
+   "Tamil Nadu",
+   31
   ],
   [
-   "Uttaranchal",
+   "Bihar",
    29
   ],
   [
-   "Jharkhand",
+   "Haryana",
    26
   ],
   [
-   "Nagaland",
-   8
+   "Chhattisgarh",
+   24
   ],
   [
-   "Goa",
+   "Telangana",
+   22
+  ],
+  [
+   "Odisha",
+   19
+  ],
+  [
+   "Rajasthan",
+   19
+  ],
+  [
+   "West Bengal",
+   17
+  ],
+  [
+   "Punjab",
+   14
+  ],
+  [
+   "Jharkhand",
+   9
+  ],
+  [
+   "Uttarakhand",
+   7
+  ],
+  [
+   "Jammu And Kashmir",
+   6
+  ],
+  [
+   "Andhra Pradesh",
    6
   ],
   [
    "Himachal Pradesh",
-   5
-  ],
-  [
-   "Meghalaya",
    4
   ],
   [
-   "Manipur",
-   2
-  ],
-  [
-   "Daman And Diu",
-   2
-  ],
-  [
-   "Andaman And Nicobar Islands",
-   2
+   "Goa",
+   4
   ],
   [
    "Tripura",
+   1
+  ],
+  [
+   "Meghalaya",
+   1
+  ],
+  [
+   "Manipur",
+   1
+  ],
+  [
+   "Andaman And Nicobar Islands",
    1
   ]
  ],
  "by_place": [
   [
    "Delhi, Delhi",
-   157
+   69
   ],
   [
    "New Delhi, Delhi",
-   134
-  ],
-  [
-   "Mumbai, Maharashtra",
-   122
+   48
   ],
   [
    "Pune, Maharashtra",
-   57
-  ],
-  [
-   "Hyderabad, Andhra Pradesh",
-   53
-  ],
-  [
-   "Patna, Bihar",
    37
+  ],
+  [
+   "Mumbai, Maharashtra",
+   29
   ],
   [
    "Bengaluru, Karnataka",
-   37
-  ],
-  [
-   "Surat, Gujarat",
-   36
-  ],
-  [
-   "Hindustan, India (General)",
-   35
-  ],
-  [
-   "Kerala, Kerala",
-   31
-  ],
-  [
-   "Guwahati, Assam",
-   26
-  ],
-  [
-   "Indore, Madhya Pradesh",
-   26
-  ],
-  [
-   "Bhopal, Madhya Pradesh",
-   24
-  ],
-  [
-   "Madras, Tamil Nadu",
    23
   ],
   [
-   "Bihar, Bihar",
-   21
-  ],
-  [
-   "Tamil Nadu, Tamil Nadu",
-   21
-  ],
-  [
-   "Jammu, Jammu And Kashmir",
-   21
-  ],
-  [
-   "Karnataka, Karnataka",
+   "Guwahati, Assam",
    20
   ],
   [
-   "Haryana, Haryana",
-   20
-  ],
-  [
-   "Bangalore, Karnataka",
-   19
-  ],
-  [
-   "Uttar Pradesh, Uttar Pradesh",
-   19
-  ],
-  [
-   "Rajkot, Gujarat",
-   19
+   "Hyderabad, Telangana",
+   17
   ],
   [
    "Lucknow, Uttar Pradesh",
-   19
+   17
+  ],
+  [
+   "Bhopal, Madhya Pradesh",
+   15
+  ],
+  [
+   "Kerala, Kerala",
+   15
+  ],
+  [
+   "Surat, Gujarat",
+   12
+  ],
+  [
+   "Uttar Pradesh, Uttar Pradesh",
+   12
+  ],
+  [
+   "Raipur, Chhattisgarh",
+   12
+  ],
+  [
+   "Indore, Madhya Pradesh",
+   11
+  ],
+  [
+   "Bihar, Bihar",
+   11
+  ],
+  [
+   "Haryana, Haryana",
+   10
+  ],
+  [
+   "Chennai, Tamil Nadu",
+   9
+  ],
+  [
+   "Karnataka, Karnataka",
+   9
+  ],
+  [
+   "Patna, Bihar",
+   8
+  ],
+  [
+   "Bhubaneswar, Odisha",
+   7
+  ],
+  [
+   "Tamil Nadu, Tamil Nadu",
+   7
+  ],
+  [
+   "Chhattisgarh, Chhattisgarh",
+   7
+  ],
+  [
+   "Ahmedabad, Gujarat",
+   7
   ],
   [
    "Ghaziabad, Uttar Pradesh",
-   18
+   7
   ],
   [
-   "Madhya Pradesh, Madhya Pradesh",
-   18
+   "Jammu, Jammu And Kashmir",
+   6
   ]
  ],
  "by_day": [
   {
    "day": "2026-11-25",
-   "Sexual violence": 89,
-   "Assault": 61,
-   "Murder": 343,
-   "Drug Offense": 108,
-   "Kidnapping": 41,
-   "Fraud": 54,
-   "Robbery": 46,
-   "Cyber Crime": 77,
-   "Domestic Violence": 8,
-   "Burglary": 3,
-   "Theft": 8,
-   "Arson": 2,
+   "Kidnapping": 15,
+   "Assault": 46,
+   "Drug Offense": 36,
+   "Murder": 95,
+   "Sexual violence": 36,
+   "Fraud": 40,
+   "Robbery": 14,
+   "Cyber Crime": 22,
+   "Burglary": 1,
+   "Theft": 10,
    "Arms Act": 3,
-   "Snatching": 6,
+   "Domestic Violence": 3,
+   "Snatching": 5,
    "Gambling": 1,
-   "total": 850
+   "total": 327
   },
   {
    "day": "2026-11-26",
-   "Fraud": 64,
-   "Cyber Crime": 76,
-   "Murder": 373,
-   "Sexual violence": 72,
-   "Drug Offense": 92,
-   "Theft": 15,
-   "Kidnapping": 42,
-   "Assault": 97,
-   "Domestic Violence": 16,
-   "Robbery": 43,
+   "Fraud": 50,
+   "Cyber Crime": 27,
+   "Assault": 44,
+   "Sexual violence": 36,
+   "Robbery": 19,
+   "Theft": 19,
+   "Murder": 108,
+   "Drug Offense": 31,
+   "Kidnapping": 12,
    "Burglary": 3,
    "Snatching": 2,
    "Other crime": 2,
-   "Arson": 1,
-   "total": 898
+   "Domestic Violence": 2,
+   "total": 355
   },
   {
    "day": "2026-11-27",
-   "Murder": 48,
-   "Robbery": 3,
-   "Domestic Violence": 1,
-   "Cyber Crime": 6,
-   "Drug Offense": 16,
-   "Kidnapping": 11,
-   "Sexual violence": 15,
-   "Fraud": 11,
+   "Robbery": 2,
+   "Murder": 17,
+   "Sexual violence": 8,
+   "Cyber Crime": 2,
+   "Fraud": 9,
    "Theft": 2,
-   "Assault": 3,
-   "total": 116
+   "Assault": 5,
+   "Drug Offense": 3,
+   "Kidnapping": 1,
+   "total": 49
   }
  ],
  "by_origin": [
   [
    "news",
-   1259
+   517
   ],
   [
    "news-translated",
-   586
+   195
   ],
   [
    "police",
