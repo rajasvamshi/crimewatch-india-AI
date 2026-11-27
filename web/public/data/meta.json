@@ -1,0 +1,15 @@
+{
+ "generated_at": "2026-11-27T05:44:47Z",
+ "window": {
+  "from": "2026-11-25T05:44+00:00",
+  "to": "2026-11-27T05:44+00:00"
+ },
+ "new_news": 463,
+ "new_police": 19,
+ "kept_days": 30,
+ "sources": {
+  "news": "GDELT 2.0 Global Knowledge Graph (gdeltproject.org), English + translated Indian-language news",
+  "police": "Delhi Police press releases (delhipolice.gov.in/newpressrelease)",
+  "official": "NCRB Crime in India 2023 and 2024"
+ }
+}

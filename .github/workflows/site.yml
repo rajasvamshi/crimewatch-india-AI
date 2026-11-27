@@ -1,0 +1,75 @@
+name: Website (hourly data refresh + deploy)
+
+# Every hour: read new Indian crime reports (GDELT news + Delhi Police), merge them with what
+# the live site already shows (last 30 days), rebuild the website and publish it on GitHub Pages.
+# One-time setup: Settings > Pages > Build and deployment > Source: "GitHub Actions".
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: "News hours to fetch when the site has no history yet"
+        default: "48"
+  push:
+    branches: [main, "claude/**"]
+    paths: ["web/**", "src/crimewatch/**", ".github/workflows/site.yml"]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install "pandas>=2,<3" "pyarrow>=23.0.1,<24"
+      - name: Refresh incident data
+        run: |
+          python -m src.crimewatch.site_data --out web/public/data \
+            --previous "$SITE_URL/data/incidents.json" --hours "${{ inputs.hours || '48' }}"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build website
+        working-directory: web
+        run: npm ci && npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+      # Preview branches: keep a copy of the data in the branch so reviewers can run the site locally.
+      - name: Save preview data (branches only)
+        if: github.ref != 'refs/heads/main'
+        run: |
+          git add web/public/data/*.json
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "crimewatch-data-bot"
+          git config user.email "crimewatch-data-bot@users.noreply.github.com"
+          git commit -m "data: preview snapshot $(date -u +%FT%H:%MZ) [skip ci]"
+          git push
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

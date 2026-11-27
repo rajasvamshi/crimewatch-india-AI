@@ -1,0 +1,390 @@
+{
+ "generated_at": "2026-11-27T05:44:47Z",
+ "total": 482,
+ "last_24h": 223,
+ "states_last_24h": 22,
+ "by_category": [
+  [
+   "Murder",
+   153
+  ],
+  [
+   "Assault",
+   70
+  ],
+  [
+   "Sexual violence",
+   56
+  ],
+  [
+   "Fraud",
+   51
+  ],
+  [
+   "Cyber Crime",
+   34
+  ],
+  [
+   "Theft",
+   27
+  ],
+  [
+   "Drug Offense",
+   26
+  ],
+  [
+   "Robbery",
+   25
+  ],
+  [
+   "Kidnapping",
+   19
+  ],
+  [
+   "Snatching",
+   7
+  ],
+  [
+   "Burglary",
+   4
+  ],
+  [
+   "Domestic Violence",
+   4
+  ],
+  [
+   "Arms Act",
+   3
+  ],
+  [
+   "Other crime",
+   2
+  ],
+  [
+   "Gambling",
+   1
+  ]
+ ],
+ "by_category_24h": [
+  [
+   "Murder",
+   71
+  ],
+  [
+   "Assault",
+   32
+  ],
+  [
+   "Sexual violence",
+   25
+  ],
+  [
+   "Fraud",
+   25
+  ],
+  [
+   "Robbery",
+   16
+  ],
+  [
+   "Cyber Crime",
+   16
+  ],
+  [
+   "Theft",
+   16
+  ],
+  [
+   "Drug Offense",
+   10
+  ],
+  [
+   "Kidnapping",
+   6
+  ],
+  [
+   "Burglary",
+   2
+  ],
+  [
+   "Snatching",
+   2
+  ],
+  [
+   "Other crime",
+   2
+  ]
+ ],
+ "by_state": [
+  [
+   "Delhi",
+   88
+  ],
+  [
+   "Maharashtra",
+   74
+  ],
+  [
+   "Uttar Pradesh",
+   49
+  ],
+  [
+   "Madhya Pradesh",
+   30
+  ],
+  [
+   "Karnataka",
+   27
+  ],
+  [
+   "Gujarat",
+   24
+  ],
+  [
+   "Haryana",
+   21
+  ],
+  [
+   "Chhattisgarh",
+   20
+  ],
+  [
+   "Tamil Nadu",
+   19
+  ],
+  [
+   "Assam",
+   18
+  ],
+  [
+   "Bihar",
+   17
+  ],
+  [
+   "Kerala",
+   16
+  ],
+  [
+   "Rajasthan",
+   14
+  ],
+  [
+   "Telangana",
+   14
+  ],
+  [
+   "Odisha",
+   12
+  ],
+  [
+   "West Bengal",
+   10
+  ],
+  [
+   "Punjab",
+   9
+  ],
+  [
+   "Jharkhand",
+   7
+  ],
+  [
+   "Uttarakhand",
+   3
+  ],
+  [
+   "Goa",
+   3
+  ],
+  [
+   "Andhra Pradesh",
+   2
+  ],
+  [
+   "Tripura",
+   1
+  ],
+  [
+   "Meghalaya",
+   1
+  ],
+  [
+   "Manipur",
+   1
+  ],
+  [
+   "Andaman And Nicobar Islands",
+   1
+  ],
+  [
+   "Jammu And Kashmir",
+   1
+  ]
+ ],
+ "by_place": [
+  [
+   "Delhi",
+   52
+  ],
+  [
+   "Mumbai, Maharashtra",
+   28
+  ],
+  [
+   "Pune, Maharashtra",
+   27
+  ],
+  [
+   "Bengaluru, Karnataka",
+   18
+  ],
+  [
+   "New Delhi, Delhi",
+   16
+  ],
+  [
+   "Bhopal, Madhya Pradesh",
+   11
+  ],
+  [
+   "Guwahati, Assam",
+   10
+  ],
+  [
+   "Surat, Gujarat",
+   9
+  ],
+  [
+   "Indore, Madhya Pradesh",
+   9
+  ],
+  [
+   "Raipur, Chhattisgarh",
+   9
+  ],
+  [
+   "Hyderabad, Telangana",
+   9
+  ],
+  [
+   "Uttar Pradesh",
+   8
+  ],
+  [
+   "Haryana",
+   8
+  ],
+  [
+   "Bhubaneswar, Odisha",
+   7
+  ],
+  [
+   "Lucknow, Uttar Pradesh",
+   7
+  ],
+  [
+   "Chhattisgarh",
+   6
+  ],
+  [
+   "Bihar",
+   5
+  ],
+  [
+   "Ahmedabad, Gujarat",
+   5
+  ],
+  [
+   "Patna, Bihar",
+   5
+  ],
+  [
+   "Ghaziabad, Uttar Pradesh",
+   5
+  ],
+  [
+   "Jaipur, Rajasthan",
+   4
+  ],
+  [
+   "Kolkata, West Bengal",
+   4
+  ],
+  [
+   "Chennai, Tamil Nadu",
+   4
+  ],
+  [
+   "Gorakhpur, Uttar Pradesh",
+   4
+  ],
+  [
+   "Thrissur, Kerala",
+   4
+  ]
+ ],
+ "by_day": [
+  {
+   "day": "2026-11-25",
+   "Kidnapping": 11,
+   "Assault": 34,
+   "Drug Offense": 15,
+   "Sexual violence": 27,
+   "Fraud": 24,
+   "Robbery": 9,
+   "Cyber Crime": 17,
+   "Murder": 68,
+   "Burglary": 1,
+   "Theft": 10,
+   "Arms Act": 3,
+   "Domestic Violence": 3,
+   "Snatching": 5,
+   "Gambling": 1,
+   "total": 228
+  },
+  {
+   "day": "2026-11-26",
+   "Sexual violence": 22,
+   "Robbery": 14,
+   "Fraud": 21,
+   "Theft": 16,
+   "Assault": 32,
+   "Murder": 69,
+   "Kidnapping": 7,
+   "Cyber Crime": 15,
+   "Drug Offense": 10,
+   "Burglary": 3,
+   "Snatching": 2,
+   "Other crime": 2,
+   "Domestic Violence": 1,
+   "total": 214
+  },
+  {
+   "day": "2026-11-27",
+   "Robbery": 2,
+   "Sexual violence": 7,
+   "Assault": 4,
+   "Murder": 16,
+   "Cyber Crime": 2,
+   "Fraud": 6,
+   "Theft": 1,
+   "Drug Offense": 1,
+   "Kidnapping": 1,
+   "total": 40
+  }
+ ],
+ "by_origin": [
+  [
+   "news",
+   352
+  ],
+  [
+   "news-translated",
+   111
+  ],
+  [
+   "police",
+   19
+  ]
+ ]
+}
