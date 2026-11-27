@@ -55,8 +55,11 @@ def test_translated_rows_use_hindi_words_then_strict_themes():
     row = _row("https://hi.ex.in/h", "लखनऊ में दुकान से चोरी", [], LKO)
     (i,) = g.parse_rows([row], origin="news-translated")
     assert i.category == "Theft" and i.origin == "news-translated"
-    ml = _row("https://ml.ex.in/m", "കവർച്ച", ["CRIME_COMMON_ROBBERY", "ARREST"], LKO)
-    assert next(g.parse_rows([ml], origin="news-translated")).category == "Robbery"
+    ml = _row("https://ml.ex.in/m", "തട്ടിക്കൊണ്ടുപോയി", ["KIDNAP", "ARREST"], LKO)
+    assert next(g.parse_rows([ml], origin="news-translated")).category == "Kidnapping"
+    # an unreadable headline with only a robbery theme is too weak (Gujarati "controversy" stories)
+    gu = _row("https://gu.ex.in/r", "જૂનાગઢ વિવાદ", ["CRIME_COMMON_ROBBERY", "ARREST"], LKO)
+    assert list(g.parse_rows([gu], origin="news-translated")) == []
     weak = _row("https://ml.ex.in/w", "something", ["CRIME_COMMON_ROBBERY"], LKO)
     assert list(g.parse_rows([weak], origin="news-translated")) == []
 
@@ -89,3 +92,52 @@ def test_zip_round_trip_and_file_urls():
     utc = timezone.utc
     urls = g.file_urls(datetime(2026, 11, 27, 4, 50, tzinfo=utc), datetime(2026, 11, 27, 5, 20, tzinfo=utc))
     assert urls[0].endswith("20261127044500.gkg.csv.zip") and len(urls) == 6
+
+
+def test_court_followups_medicines_and_political_hindi_dropped():
+    rows = [
+        _row("https://ex.in/k1", "Delhi HC grants bail to murder accused", ["KILL"], LKO),
+        _row("https://ex.in/k2", "Man convicted in 2007 robbery case", [], LKO),
+        _row("https://ex.in/k3", "Raid on spurious, adulterated drugs unit", ["CRIME_ILLEGAL_DRUGS"], LKO),
+    ]
+    assert list(g.parse_rows(rows)) == []
+    hi = [
+        _row("https://hi.ex.in/p1", "खड़गे बोले, भाजपा का संविधान पर हमला", [], LKO),
+        _row("https://hi.ex.in/p2", "जवानों ने हमला करने का अभ्यास किया", [], LKO),
+    ]
+    assert list(g.parse_rows(hi, origin="news-translated")) == []
+    (i,) = g.parse_rows([_row("https://hi.ex.in/p3", "युवक पर चाकू से जानलेवा हमला", [], LKO)], origin="news-translated")
+    assert i.category == "Assault"
+    # an attack *at* a court is a new incident
+    (j,) = g.parse_rows([_row("https://ex.in/k4", "Man attacked with sickles outside Pune court", [], LKO)])
+    assert j.category == "Assault"
+
+
+def test_repeated_place_names_collapsed():
+    dl = "4#Delhi, Delhi, India#IN#IN07##28.6#77.2#-1#5"
+    (i,) = g.parse_rows([_row("https://ex.in/dl", "Two held for robbery", [], dl)])
+    assert i.place == "Delhi" and i.state == "Delhi"
+
+
+def test_recheck_previous_items():
+    old = {"origin": "news", "title": "Delhi HC grants bail", "place": "Delhi"}
+    assert g.recheck(old) is None
+    kept = g.recheck({"origin": "news", "title": "Two held for robbery", "place": "Delhi, Delhi"})
+    assert kept["place"] == "Delhi"
+    assert g.recheck({"origin": "police", "title": None, "place": "x"})["place"] == "x"
+
+
+def test_business_policy_and_political_stories_dropped():
+    rows = [
+        _row("https://ex.in/b1", "Cipla receives USFDA nod for generic asthma drug", [], LKO),
+        _row("https://ex.in/b2", "Smaller cities report higher cyber threat exposure than metros", [], LKO),
+        _row("https://ex.in/b3", "People of Tamil Nadu will never forgive TVK govt over fraud: BJP", [], LKO),
+        _row("https://ex.in/b4", "FPJ Quick Take: police file FIR against comedian", [], LKO),
+    ]
+    assert list(g.parse_rows(rows)) == []
+    (i,) = g.parse_rows([_row("https://ex.in/b5", "Two held with ganja worth Rs 2 lakh", [], LKO)])
+    assert i.category == "Drug Offense"
+    (j,) = g.parse_rows([_row("https://ex.in/b6", "Man duped of Rs 25 lakh in online fraud", [], LKO)])
+    assert j.category == "Cyber Crime"
+    hi = _row("https://hi.ex.in/b7", "भोपाल रेल मंडल में चेतावनी सिस्टम", ["KIDNAP", "ARREST"], LKO)
+    assert list(g.parse_rows([hi], origin="news-translated")) == []

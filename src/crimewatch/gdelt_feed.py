@@ -70,9 +70,36 @@ EXTRA_RULES: list[tuple[str, re.Pattern]] = [
 NOT_INCIDENT = re.compile(
     r"\b(film|movie|web series|trailer|box office|review|cricket|ipl|match|election|poll|budget|"
     r"opinion|editorial|explained|quiz|horoscope|stock|shares?|sensex|nifty|recruit\w*|"
-    r"accident|collision|crash\w*|rams?|rammed|mishap|drown\w*|electrocut\w*|stampede|landslide|"
+    r"accidents?|collision|crash\w*|rams?|rammed|mishap|drown\w*|electrocut\w*|stampede|landslide|"
     r"flood\w*|blaze|fire broke|terror\w*|naxal\w*|maoist\w*|militant\w*|insurgen\w*|"
-    r"anti-terror|26/11|outage|tiger|leopard|elephant)\b", re.I)
+    r"anti-terror|26/11|outage|tiger|leopard|elephant|"
+    # medicines, not narcotics
+    r"spurious|adulterat\w*|medicines?|pharma\w*|usfda|generic|drill|swept away|"
+    # roundups and opinion columns
+    r"guilty|condemns|quick take|live updates?|top news|news wrap|headlines|bulletin|report card)\b", re.I)
+# Words that show a specific event happened (an arrest, a victim, a raid). Business, policy and
+# political stories that merely use "fraud", "cyber" or "drug" lack them.
+EVENT_WORDS = re.compile(
+    r"\b(arrest\w*|held|nab\w*|booked|fir|police|cops?|detain\w*|killed|dead|death|stabbed|shot|"
+    r"injured|robbed|looted|duped|cheated|lost|seiz\w*|recover\w*|raid\w*|bust\w*|searches|attach\w*|"
+    r"ed|cbi|nia|eow|ncb|dri|victims?|accused|gang|racket|crore|lakh|rs|₹)", re.I)
+NEEDS_EVENT = {"Cyber Crime", "Drug Offense", "Fraud"}
+NARCOTIC = re.compile(r"\b(ndps|narcotic\w*|ganja|heroin|smack|cocaine|mdma|charas|opium|hashish|"
+                      r"mephedrone|md|meth\w*|brown sugar|poppy|drug (peddl|smuggl|haul|racket|bust|cartel)\w*|"
+                      r"drugs worth|peddl\w*|cannabis|doda|psychotropic)", re.I)
+# Court and follow-up stories (bail, verdicts, chargesheets): the incident itself was reported earlier.
+# An attack that happens *at* a court is still a new incident.
+COURT = re.compile(r"\b(bail|convict\w*|acquit\w*|verdict|sentenc\w*|life imprisonment|chargesheet\w*|"
+                   r"charge ?sheet|court|hc|high court|supreme court|hearing|plea|petition|tribunal)\b|"
+                   r"(अदालत|कोर्ट|जमानत|सजा|फैसला)", re.I)
+AT_COURT = re.compile(r"\b(outside|near|at)\b[^|:]{0,40}\bcourt\b|\bcourt (attack|firing)\b|"
+                      r"(कोर्ट के बाहर|कोर्टाबाहेर)", re.I)
+
+
+def _not_incident(title: str) -> bool:
+    if NOT_INCIDENT.search(title) or HINDI_NOT_INCIDENT.search(title):
+        return True
+    return bool(COURT.search(title)) and not AT_COURT.search(title)
 
 # Hindi headline keywords (the translated feed keeps the original-language title)
 HINDI_RULES: list[tuple[str, re.Pattern]] = [
@@ -87,9 +114,15 @@ HINDI_RULES: list[tuple[str, re.Pattern]] = [
     ("Fraud", re.compile(r"(ठगी|धोखाधड़ी|जालसाजी|फर्जीवाड़ा)")),
     ("Drug Offense", re.compile(r"(ड्रग्स|गांजा|स्मैक|हेरोइन|नशीले|अफीम|चरस)")),
     ("Domestic Violence", re.compile(r"(दहेज|घरेलू हिंसा)")),
-    ("Assault", re.compile(r"(मारपीट|हमला|चाकू)")),
+    # "हमला" alone is often political ("attack on the opposition"); require a physical-attack phrase
+    ("Assault", re.compile(r"(मारपीट|पिटाई|चाकू|लाठी|जानलेवा हमला|हमले में घायल|बदमाशों ने|फायरिंग)")),
 ]
-HINDI_NOT_INCIDENT = re.compile(r"(हादसा|दुर्घटना|सड़क|फिल्म|चुनाव|क्रिकेट|नक्सली|आतंक)")
+HINDI_NOT_INCIDENT = re.compile(
+    r"(हादसा|दुर्घटना|सड़क|फिल्म|चुनाव|क्रिकेट|नक्सली|आतंक|जवानों|सेना|कांग्रेस|भाजपा|रैली|सभा|बोले|"
+    r"नेता|सांसद|विधायक|मंत्री|पाकिस्तान|ड्रिल|दवा)")
+DEVANAGARI = re.compile(r"[\u0900-\u097f]")
+# Theme-only categories trusted for headlines we cannot read (Gujarati, Tamil, Bengali, ...)
+UNREAD_TITLE_CATEGORIES = {"Sexual violence", "Kidnapping"}
 
 # Indian outlets only (foreign and legal-database sites are dropped)
 INDIAN_DOMAINS = {
@@ -114,7 +147,10 @@ NOT_NEWS = {"indiankanoon.org", "casemine.com", "livelaw.in", "barandbench.com",
 PLACE_FIXES = {"Orissa": "Odisha", "Uttaranchal": "Uttarakhand", "Pondicherry": "Puducherry", "Madras": "Chennai",
                "Bombay": "Mumbai", "Calcutta": "Kolkata", "Palghat": "Palakkad", "Trivandrum": "Thiruvananthapuram",
                "Bangalore": "Bengaluru", "Mysore": "Mysuru", "Gurgaon": "Gurugram", "Poona": "Pune"}
-TELANGANA_CITIES = {"Hyderabad", "Secunderabad", "Warangal", "Karimnagar", "Nizamabad", "Khammam", "Ranga Reddy",
+# GDELT resolves some common city names to a same-named village elsewhere; drop rather than misplace
+MISRESOLVED = {("Udaipur", "Odisha")}
+TELANGANA_CITIES = {"Telangana", "Hyderabad",
+                    "Secunderabad", "Warangal", "Karimnagar", "Nizamabad", "Khammam", "Ranga Reddy",
                     "Medak", "Nalgonda", "Mahbubnagar", "Adilabad", "Siddipet", "Sangareddy"}
 
 
@@ -215,6 +251,9 @@ def _india_location(loc2: str, loc1: str) -> tuple[str, str | None, float, float
     state = parts[-2] if len(parts) >= 3 else (parts[0] if typ == 5 else None)
     if state == "Andhra Pradesh" and parts[0] in TELANGANA_CITIES:
         state = parts[-2] = "Telangana"
+    if (parts[0], state) in MISRESOLVED:
+        return None
+    parts = [p for i, p in enumerate(parts) if i == 0 or p != parts[i - 1]]  # "Delhi, Delhi" -> "Delhi"
     place = ", ".join(parts[:-1]) if parts[-1] == "India" else ", ".join(parts)
     return place, state, round(lat, 4), round(lon, 4), ("state" if typ == 5 else "city")
 
@@ -230,26 +269,37 @@ def categorize(title: str | None, themes: set[str], english: bool = True) -> str
     headline keywords are used first, then only the most specific crime themes.
     """
     if english:
-        if not title or NOT_INCIDENT.search(title):
+        if not title or _not_incident(title):
             return None
         for cat, rx in EXTRA_RULES:
             if rx.search(title):
                 return cat
         cat = classify(title)
+        if cat in NOT_CRIME or cat in {"Other", "Gambling"}:
+            return None
         if cat == "Assault" and POLITICAL.search(title):
             return None
-        return None if cat in NOT_CRIME or cat in {"Other", "Gambling"} else cat
+        if (cat in NEEDS_EVENT or POLITICAL.search(title)) and not EVENT_WORDS.search(title):
+            return None
+        if cat == "Drug Offense" and not NARCOTIC.search(title):
+            return None
+        return cat
     if title:
-        if HINDI_NOT_INCIDENT.search(title) or NOT_INCIDENT.search(title):
+        if _not_incident(title):
             return None
         for cat, rx in HINDI_RULES:
             if rx.search(title):
                 return cat
     if themes & POLITICAL_OR_WAR or "TERROR" in themes:
         return None
+    if title and DEVANAGARI.search(title):
+        return None  # a readable Hindi headline without a crime word is not a crime report
+    unread = bool(title)
     for cat, codes in THEME_CATEGORIES:
         if cat in {"Cyber Crime", "Domestic Violence"}:
             continue  # too broad without a headline
+        if unread and cat not in UNREAD_TITLE_CATEGORIES:
+            continue
         if themes & codes and themes & CRIME_CONTEXT:
             return cat
     if {"KILL", "ARREST", "TAX_FNCACT_POLICE"} <= themes and "SOC_GENERALCRIME" in themes:
@@ -333,3 +383,26 @@ def fetch(start: datetime, end: datetime, workers: int = 8, translated: bool = T
 
 def as_dicts(items: Iterable[Incident]) -> list[dict]:
     return [asdict(i) for i in items]
+
+
+def recheck(d: dict) -> dict | None:
+    """Apply today's exclusion rules to an incident kept from an earlier run (rules improve over time)."""
+    if not d.get("origin", "").startswith("news"):
+        return d
+    t = d.get("title") or ""
+    if _not_incident(t):
+        return None
+    if d["origin"] == "news-translated" and t and not DEVANAGARI.search(t) and \
+            d.get("category") not in UNREAD_TITLE_CATEGORIES:
+        return None
+    if t and DEVANAGARI.search(t) and categorize(t, set(), english=False) is None:
+        return None
+    if d["origin"] == "news" and t and not DEVANAGARI.search(t) and categorize(t, set()) is None:
+        return None
+    parts = d["place"].split(", ")
+    if (parts[0], d.get("state")) in MISRESOLVED:
+        return None
+    if parts[0] == "Telangana":
+        d["state"], parts = "Telangana", ["Telangana"]
+    d["place"] = ", ".join(p for i, p in enumerate(parts) if i == 0 or p != parts[i - 1])
+    return d

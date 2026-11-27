@@ -122,7 +122,7 @@ def main(argv: list[str] | None = None) -> int:
     news = gdelt_feed.as_dicts(gdelt_feed.fetch(start, now))
     police = [] if a.no_delhi else delhi_incidents(days=3)
 
-    merged: dict[str, dict] = {i["id"]: i for i in prev}
+    merged: dict[str, dict] = {i["id"]: i for i in prev if gdelt_feed.recheck(i)}
     for i in news + police:
         merged[i["id"]] = i
     cutoff = (now - timedelta(days=a.keep_days)).isoformat()[:19]
