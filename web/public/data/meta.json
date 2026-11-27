@@ -1,11 +1,11 @@
 {
- "generated_at": "2026-11-27T05:13:33Z",
+ "generated_at": "2026-11-27T05:21:01Z",
  "window": {
-  "from": "2026-11-25T05:13+00:00",
-  "to": "2026-11-27T05:13+00:00"
+  "from": "2026-11-25T05:21+00:00",
+  "to": "2026-11-27T05:21+00:00"
  },
- "new_news": 712,
- "new_police": 19,
+ "new_news": 476,
+ "new_police": 18,
  "kept_days": 30,
  "sources": {
   "news": "GDELT 2.0 Global Knowledge Graph (gdeltproject.org), English + translated Indian-language news",

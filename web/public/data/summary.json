@@ -1,44 +1,44 @@
 {
- "generated_at": "2026-11-27T05:13:33Z",
- "total": 731,
- "last_24h": 366,
- "states_last_24h": 25,
+ "generated_at": "2026-11-27T05:21:01Z",
+ "total": 494,
+ "last_24h": 231,
+ "states_last_24h": 23,
  "by_category": [
   [
    "Murder",
-   220
-  ],
-  [
-   "Fraud",
-   99
+   161
   ],
   [
    "Assault",
-   95
+   71
   ],
   [
    "Sexual violence",
-   80
+   57
   ],
   [
-   "Drug Offense",
-   70
+   "Fraud",
+   52
   ],
   [
    "Cyber Crime",
-   51
-  ],
-  [
-   "Robbery",
-   35
+   34
   ],
   [
    "Theft",
-   31
+   26
+  ],
+  [
+   "Drug Offense",
+   26
+  ],
+  [
+   "Robbery",
+   25
   ],
   [
    "Kidnapping",
-   28
+   20
   ],
   [
    "Snatching",
@@ -68,43 +68,43 @@
  "by_category_24h": [
   [
    "Murder",
-   111
-  ],
-  [
-   "Fraud",
-   57
+   77
   ],
   [
    "Assault",
-   45
+   33
   ],
   [
    "Sexual violence",
-   39
+   25
   ],
   [
-   "Drug Offense",
-   29
-  ],
-  [
-   "Cyber Crime",
-   26
+   "Fraud",
+   25
   ],
   [
    "Robbery",
-   20
+   16
+  ],
+  [
+   "Cyber Crime",
+   16
   ],
   [
    "Theft",
-   20
+   15
+  ],
+  [
+   "Drug Offense",
+   10
   ],
   [
    "Kidnapping",
-   11
+   7
   ],
   [
    "Burglary",
-   3
+   2
   ],
   [
    "Snatching",
@@ -122,98 +122,94 @@
  "by_state": [
   [
    "Delhi",
-   138
+   90
   ],
   [
    "Maharashtra",
-   91
+   77
   ],
   [
    "Uttar Pradesh",
-   76
-  ],
-  [
-   "Karnataka",
-   41
-  ],
-  [
-   "Kerala",
-   39
+   51
   ],
   [
    "Madhya Pradesh",
-   38
+   30
+  ],
+  [
+   "Karnataka",
+   28
   ],
   [
    "Gujarat",
-   34
-  ],
-  [
-   "Assam",
-   33
-  ],
-  [
-   "Tamil Nadu",
-   31
-  ],
-  [
-   "Bihar",
-   29
-  ],
-  [
-   "Haryana",
-   26
-  ],
-  [
-   "Chhattisgarh",
    24
   ],
   [
-   "Telangana",
-   22
+   "Haryana",
+   21
   ],
   [
-   "Odisha",
-   19
+   "Tamil Nadu",
+   20
   ],
   [
-   "Rajasthan",
-   19
+   "Chhattisgarh",
+   20
   ],
   [
-   "West Bengal",
+   "Assam",
+   18
+  ],
+  [
+   "Bihar",
    17
   ],
   [
-   "Punjab",
+   "Kerala",
+   17
+  ],
+  [
+   "Rajasthan",
    14
   ],
   [
-   "Jharkhand",
-   9
+   "Telangana",
+   14
   ],
   [
-   "Uttarakhand",
+   "Odisha",
+   12
+  ],
+  [
+   "West Bengal",
+   10
+  ],
+  [
+   "Punjab",
+   10
+  ],
+  [
+   "Jharkhand",
    7
   ],
   [
-   "Jammu And Kashmir",
-   6
-  ],
-  [
-   "Andhra Pradesh",
-   6
-  ],
-  [
-   "Himachal Pradesh",
-   4
+   "Uttarakhand",
+   3
   ],
   [
    "Goa",
-   4
+   3
+  ],
+  [
+   "Andhra Pradesh",
+   2
   ],
   [
    "Tripura",
+   1
+  ],
+  [
+   "Himachal Pradesh",
    1
   ],
   [
@@ -227,83 +223,63 @@
   [
    "Andaman And Nicobar Islands",
    1
+  ],
+  [
+   "Jammu And Kashmir",
+   1
   ]
  ],
  "by_place": [
   [
-   "Delhi, Delhi",
-   69
-  ],
-  [
-   "New Delhi, Delhi",
-   48
-  ],
-  [
-   "Pune, Maharashtra",
-   37
+   "Delhi",
+   54
   ],
   [
    "Mumbai, Maharashtra",
-   29
+   28
+  ],
+  [
+   "Pune, Maharashtra",
+   28
   ],
   [
    "Bengaluru, Karnataka",
-   23
+   18
   ],
   [
-   "Guwahati, Assam",
-   20
-  ],
-  [
-   "Hyderabad, Telangana",
-   17
-  ],
-  [
-   "Lucknow, Uttar Pradesh",
+   "New Delhi, Delhi",
    17
   ],
   [
    "Bhopal, Madhya Pradesh",
-   15
-  ],
-  [
-   "Kerala, Kerala",
-   15
-  ],
-  [
-   "Surat, Gujarat",
-   12
-  ],
-  [
-   "Uttar Pradesh, Uttar Pradesh",
-   12
-  ],
-  [
-   "Raipur, Chhattisgarh",
-   12
-  ],
-  [
-   "Indore, Madhya Pradesh",
    11
   ],
   [
-   "Bihar, Bihar",
-   11
-  ],
-  [
-   "Haryana, Haryana",
+   "Guwahati, Assam",
    10
   ],
   [
-   "Chennai, Tamil Nadu",
+   "Surat, Gujarat",
    9
   ],
   [
-   "Karnataka, Karnataka",
+   "Indore, Madhya Pradesh",
    9
   ],
   [
-   "Patna, Bihar",
+   "Raipur, Chhattisgarh",
+   9
+  ],
+  [
+   "Hyderabad, Telangana",
+   9
+  ],
+  [
+   "Uttar Pradesh",
+   8
+  ],
+  [
+   "Haryana",
    8
   ],
   [
@@ -311,88 +287,112 @@
    7
   ],
   [
-   "Tamil Nadu, Tamil Nadu",
+   "Lucknow, Uttar Pradesh",
    7
   ],
   [
-   "Chhattisgarh, Chhattisgarh",
-   7
+   "Chhattisgarh",
+   6
+  ],
+  [
+   "Bihar",
+   5
   ],
   [
    "Ahmedabad, Gujarat",
-   7
+   5
+  ],
+  [
+   "Patna, Bihar",
+   5
   ],
   [
    "Ghaziabad, Uttar Pradesh",
-   7
+   5
   ],
   [
-   "Jammu, Jammu And Kashmir",
-   6
+   "Jaipur, Rajasthan",
+   4
+  ],
+  [
+   "Kolkata, West Bengal",
+   4
+  ],
+  [
+   "Chennai, Tamil Nadu",
+   4
+  ],
+  [
+   "Gorakhpur, Uttar Pradesh",
+   4
+  ],
+  [
+   "Thrissur, Kerala",
+   4
   ]
  ],
  "by_day": [
   {
    "day": "2026-11-25",
-   "Kidnapping": 15,
-   "Assault": 46,
-   "Drug Offense": 36,
-   "Murder": 95,
-   "Sexual violence": 36,
-   "Fraud": 40,
-   "Robbery": 14,
-   "Cyber Crime": 22,
+   "Kidnapping": 11,
+   "Assault": 34,
+   "Drug Offense": 15,
+   "Sexual violence": 28,
+   "Fraud": 25,
+   "Robbery": 9,
+   "Cyber Crime": 17,
+   "Murder": 72,
    "Burglary": 1,
    "Theft": 10,
    "Arms Act": 3,
    "Domestic Violence": 3,
    "Snatching": 5,
    "Gambling": 1,
-   "total": 327
+   "total": 234
   },
   {
    "day": "2026-11-26",
-   "Fraud": 50,
-   "Cyber Crime": 27,
-   "Assault": 44,
-   "Sexual violence": 36,
-   "Robbery": 19,
-   "Theft": 19,
-   "Murder": 108,
-   "Drug Offense": 31,
-   "Kidnapping": 12,
+   "Sexual violence": 22,
+   "Robbery": 14,
+   "Fraud": 21,
+   "Theft": 15,
+   "Assault": 32,
+   "Murder": 72,
+   "Kidnapping": 7,
+   "Cyber Crime": 15,
+   "Drug Offense": 10,
    "Burglary": 3,
    "Snatching": 2,
    "Other crime": 2,
    "Domestic Violence": 2,
-   "total": 355
+   "total": 217
   },
   {
    "day": "2026-11-27",
    "Robbery": 2,
    "Murder": 17,
-   "Sexual violence": 8,
-   "Cyber Crime": 2,
-   "Fraud": 9,
-   "Theft": 2,
    "Assault": 5,
-   "Drug Offense": 3,
-   "Kidnapping": 1,
-   "total": 49
+   "Kidnapping": 2,
+   "Sexual violence": 7,
+   "Cyber Crime": 2,
+   "Fraud": 6,
+   "Theft": 1,
+   "Drug Offense": 1,
+   "total": 43
   }
  ],
  "by_origin": [
   [
    "news",
-   517
+   359
   ],
   [
    "news-translated",
-   195
+   117
   ],
   [
    "police",
-   19
+   18
   ]
  ]
 }
