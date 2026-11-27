@@ -66,14 +66,14 @@ button { font: inherit; color: inherit; }
 .hero .shade { position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(ellipse at 30% 40%, rgba(7, 9, 13, 0.1), rgba(7, 9, 13, 0.85) 70%),
               linear-gradient(180deg, rgba(7, 9, 13, 0) 60%, var(--bg)); }
-.hero .copy { position: absolute; left: 6vw; top: 14vh; max-width: 640px; pointer-events: none; }
+.hero .copy { position: absolute; left: 6vw; top: 9vh; max-width: 640px; pointer-events: none; }
 .hero .copy > * { pointer-events: auto; }
 .eyebrow { text-transform: uppercase; letter-spacing: 0.18em; font-size: 12px; color: var(--accent-2); font-weight: 600; }
-.hero h1 { font-size: clamp(40px, 6.4vw, 92px); line-height: 0.98; letter-spacing: -0.045em; margin: 14px 0 18px; font-weight: 800; }
+.hero h1 { font-size: clamp(38px, 5vw, 76px); line-height: 0.98; letter-spacing: -0.045em; margin: 14px 0 18px; font-weight: 800; }
 .hero h1 em { font-style: normal; background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .hero p.lead { font-size: clamp(16px, 1.5vw, 20px); color: var(--muted); max-width: 520px; margin: 0 0 28px; }
-.counter { display: flex; gap: 28px; margin: 8px 0 30px; flex-wrap: wrap; }
-.counter .n { font-size: clamp(36px, 4.2vw, 60px); font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.counter { display: flex; gap: 32px; margin: 4px 0 24px; flex-wrap: wrap; }
+.counter .n { font-size: clamp(32px, 3.4vw, 52px); font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
 .counter .l { font-size: 13px; color: var(--muted); }
 .search {
   display: flex; align-items: center; gap: 10px; background: var(--panel-solid); border: 1px solid var(--line-2);

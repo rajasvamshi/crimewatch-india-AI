@@ -40,17 +40,37 @@ def test_not_incident_and_politics_dropped():
     assert list(g.parse_rows(rows)) == []
 
 
-def test_theme_fallback_and_private_title():
+def test_english_needs_crime_headline_and_private_title():
     (i,) = g.parse_rows([_row("https://ex.in/f", "Woman assaulted, accused absconding", ["RAPE"], UP)])
-    assert i.category in {"Assault", "Sexual violence"} and i.precision == "state"
+    assert i.category == "Assault" and i.precision == "state"
+    # themes alone never make an English article an incident
+    outage = _row("https://ex.in/f2", "Microsoft declares Code Red after outage", ["CYBER_ATTACK"], LKO)
+    assert list(g.parse_rows([outage])) == []
+    assert list(g.parse_rows([_row("https://ex.in/f3", "Tempo rams into bus stop, three killed", ["KILL"], LKO)])) == []
     (j,) = g.parse_rows([_row("https://ex.in/g", "Girl raped in village, two arrested", [], LKO)])
     assert j.category == "Sexual violence" and j.title is None
 
 
-def test_translated_rows_use_themes():
-    row = _row("https://hi.ex.in/h", "लखनऊ में लूट", ["CRIME_COMMON_ROBBERY"], LKO)
+def test_translated_rows_use_hindi_words_then_strict_themes():
+    row = _row("https://hi.ex.in/h", "लखनऊ में दुकान से चोरी", [], LKO)
     (i,) = g.parse_rows([row], origin="news-translated")
-    assert i.category == "Robbery" and i.origin == "news-translated"
+    assert i.category == "Theft" and i.origin == "news-translated"
+    ml = _row("https://ml.ex.in/m", "കവർച്ച", ["CRIME_COMMON_ROBBERY", "ARREST"], LKO)
+    assert next(g.parse_rows([ml], origin="news-translated")).category == "Robbery"
+    weak = _row("https://ml.ex.in/w", "something", ["CRIME_COMMON_ROBBERY"], LKO)
+    assert list(g.parse_rows([weak], origin="news-translated")) == []
+
+
+def test_outlets_and_place_names():
+    foreign = _row("https://mzamin.com/x", "Man robbed at knifepoint", [], LKO, source="mzamin.com")
+    court = _row("https://indiankanoon.org/doc/1", "Murder appeal dismissed", [], LKO, source="indiankanoon.org")
+    assert list(g.parse_rows([foreign, court])) == []
+    hyd = "4#Hyderabad, Andhra Pradesh, India#IN#IN02##17.38#78.47#-1#5"
+    (i,) = g.parse_rows([_row("https://ex.in/hy", "Two held for robbery in Hyderabad", [], hyd)])
+    assert i.state == "Telangana" and i.place == "Hyderabad, Telangana"
+    odi = "5#Orissa, India#IN#IN21##20.5#84.4#IN21#5"
+    (j,) = g.parse_rows([_row("https://ex.in/od", "Man held for theft", [], odi)])
+    assert j.state == "Odisha"
 
 
 def test_dedupe_by_url_and_syndicated_title():

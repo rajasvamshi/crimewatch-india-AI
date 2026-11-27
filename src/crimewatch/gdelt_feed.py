@@ -65,10 +65,64 @@ EXTRA_RULES: list[tuple[str, re.Pattern]] = [
     ("Cyber Crime", re.compile(r"\b(digital arrest|online fraud|sextortion)\b", re.I)),
     ("Arson", re.compile(r"\b(arson|set (on )?fire|torched)\b", re.I)),
 ]
-# Headlines that mention crime words but are not incident reports
+# Headlines that mention crime words but are not crime incident reports: entertainment, sport,
+# politics, accidents and disasters, terrorism/insurgency (a different subject), court rulings.
 NOT_INCIDENT = re.compile(
     r"\b(film|movie|web series|trailer|box office|review|cricket|ipl|match|election|poll|budget|"
-    r"opinion|editorial|explained|quiz|horoscope|stock|shares?|sensex|nifty)\b", re.I)
+    r"opinion|editorial|explained|quiz|horoscope|stock|shares?|sensex|nifty|recruit\w*|"
+    r"accident|collision|crash\w*|rams?|rammed|mishap|drown\w*|electrocut\w*|stampede|landslide|"
+    r"flood\w*|blaze|fire broke|terror\w*|naxal\w*|maoist\w*|militant\w*|insurgen\w*|"
+    r"anti-terror|26/11|outage|tiger|leopard|elephant)\b", re.I)
+
+# Hindi headline keywords (the translated feed keeps the original-language title)
+HINDI_RULES: list[tuple[str, re.Pattern]] = [
+    ("Sexual violence", re.compile(r"(बलात्कार|दुष्कर्म|छेड़छाड़|यौन उत्पीड़न|पॉक्सो)")),
+    ("Murder", re.compile(r"(हत्या|मर्डर|कत्ल|गोली मारकर|मौत के घाट)")),
+    ("Kidnapping", re.compile(r"(अपहरण|अगवा|किडनैप)")),
+    ("Robbery", re.compile(r"(लूट|डकैती)")),
+    ("Snatching", re.compile(r"(झपटमारी|स्नैचिंग|चेन झपट)")),
+    ("Burglary", re.compile(r"(सेंधमारी|नकबजनी)")),
+    ("Theft", re.compile(r"(चोरी|चोर)")),
+    ("Cyber Crime", re.compile(r"(साइबर|ऑनलाइन ठगी|डिजिटल अरेस्ट)")),
+    ("Fraud", re.compile(r"(ठगी|धोखाधड़ी|जालसाजी|फर्जीवाड़ा)")),
+    ("Drug Offense", re.compile(r"(ड्रग्स|गांजा|स्मैक|हेरोइन|नशीले|अफीम|चरस)")),
+    ("Domestic Violence", re.compile(r"(दहेज|घरेलू हिंसा)")),
+    ("Assault", re.compile(r"(मारपीट|हमला|चाकू)")),
+]
+HINDI_NOT_INCIDENT = re.compile(r"(हादसा|दुर्घटना|सड़क|फिल्म|चुनाव|क्रिकेट|नक्सली|आतंक)")
+
+# Indian outlets only (foreign and legal-database sites are dropped)
+INDIAN_DOMAINS = {
+    "hindustantimes.com", "thehindu.com", "indianexpress.com", "indiatimes.com", "ndtv.com", "news18.com",
+    "rediff.com", "deccanherald.com", "tribuneindia.com", "bhaskar.com", "jagran.com", "amarujala.com",
+    "livehindustan.com", "madhyamam.com", "manoramaonline.com", "onmanorama.com", "mathrubhumi.com",
+    "dinamalar.com", "dailythanthi.com", "anandabazar.com", "lokmat.com", "loksatta.com", "moneycontrol.com",
+    "orissapost.com", "telanganatoday.com", "thehansindia.com", "deccanchronicle.com", "newindianexpress.com",
+    "outlookindia.com", "firstpost.com", "abplive.com", "republicworld.com", "mid-day.com", "dnaindia.com",
+    "business-standard.com", "livemint.com", "thestatesman.com", "telegraphindia.com", "sentinelassam.com",
+    "greaterkashmir.com", "dailyexcelsior.com", "siasat.com", "punemirror.com", "patrika.com",
+    "prabhatkhabar.com", "freepressjournal.in", "theprint.in", "scroll.in", "thewire.in", "zeenews.com",
+    "webindia123.com", "newsonair.gov.in", "ptinews.com", "uniindia.com", "devdiscourse.com", "etvbharat.com",
+    "thehitavada.com", "sangbadpratidin.in", "cgkhabar.com", "theweek.in", "india.com", "oneindia.com",
+    "asianetnews.com", "latestly.com", "lokmattimes.com", "thenewsminute.com", "kashmirobserver.net",
+    "assamtribune.com", "nagalandpost.com", "arunachaltimes.in", "eastmojo.com", "navhindtimes.in",
+    "thecommunemag.com", "organiser.org", "opindia.com", "zeebiz.com", "aajtak.in", "naidunia.com",
+}
+NOT_NEWS = {"indiankanoon.org", "casemine.com", "livelaw.in", "barandbench.com", "verdictum.in"}
+
+# GDELT uses some historic names
+PLACE_FIXES = {"Orissa": "Odisha", "Uttaranchal": "Uttarakhand", "Pondicherry": "Puducherry", "Madras": "Chennai",
+               "Bombay": "Mumbai", "Calcutta": "Kolkata", "Palghat": "Palakkad", "Trivandrum": "Thiruvananthapuram",
+               "Bangalore": "Bengaluru", "Mysore": "Mysuru", "Gurgaon": "Gurugram", "Poona": "Pune"}
+TELANGANA_CITIES = {"Hyderabad", "Secunderabad", "Warangal", "Karimnagar", "Nizamabad", "Khammam", "Ranga Reddy",
+                    "Medak", "Nalgonda", "Mahbubnagar", "Adilabad", "Siddipet", "Sangareddy"}
+
+
+def indian_outlet(domain: str) -> bool:
+    d = domain.lower().removeprefix("www.")
+    if d in NOT_NEWS:
+        return False
+    return d.endswith(".in") or d in INDIAN_DOMAINS or any(d.endswith("." + k) for k in INDIAN_DOMAINS)
 # "X attacks Y" in politics is not an assault
 POLITICAL = re.compile(r"\b(bjp|congress|aap|tmc|dmk|minister|mla|mp|cm|govt|government|party|opposition|"
                        r"parliament|lok sabha|rajya sabha|modi|gandhi|centre)\b", re.I)
@@ -155,34 +209,50 @@ def _india_location(loc2: str, loc1: str) -> tuple[str, str | None, float, float
         return None
     if not (6 <= lat <= 37.5 and 68 <= lon <= 97.5):
         return None
-    parts = [p.strip() for p in name.split(",")]
+    parts = [PLACE_FIXES.get(p.strip(), p.strip()) for p in name.split(",")]
+    if "(General)" in name or parts[0] in {"Hindustan", "India"}:
+        return None
     state = parts[-2] if len(parts) >= 3 else (parts[0] if typ == 5 else None)
-    place = ", ".join(parts[:-1]) if parts[-1] == "India" else name
+    if state == "Andhra Pradesh" and parts[0] in TELANGANA_CITIES:
+        state = parts[-2] = "Telangana"
+    place = ", ".join(parts[:-1]) if parts[-1] == "India" else ", ".join(parts)
     return place, state, round(lat, 4), round(lon, 4), ("state" if typ == 5 else "city")
 
 
 _TITLE = re.compile(r"<PAGE_TITLE>(.*?)</PAGE_TITLE>", re.S)
 
 
-def categorize(title: str | None, themes: set[str]) -> str | None:
-    """Crime category for an article, or None if it is not an incident report."""
-    if title:
-        if NOT_INCIDENT.search(title):
+def categorize(title: str | None, themes: set[str], english: bool = True) -> str | None:
+    """Crime category for an article, or None if it is not a crime incident report.
+
+    English headlines decide on their own: GDELT's themes alone are too broad there (an IT
+    outage is tagged CYBER_ATTACK, a court ruling KILL). For Indian-language articles, Hindi
+    headline keywords are used first, then only the most specific crime themes.
+    """
+    if english:
+        if not title or NOT_INCIDENT.search(title):
             return None
         for cat, rx in EXTRA_RULES:
             if rx.search(title):
                 return cat
         cat = classify(title)
         if cat == "Assault" and POLITICAL.search(title):
-            cat = "Other"
-        if cat not in NOT_CRIME and cat not in {"Other", "Gambling"}:
-            return cat
+            return None
+        return None if cat in NOT_CRIME or cat in {"Other", "Gambling"} else cat
+    if title:
+        if HINDI_NOT_INCIDENT.search(title) or NOT_INCIDENT.search(title):
+            return None
+        for cat, rx in HINDI_RULES:
+            if rx.search(title):
+                return cat
     if themes & POLITICAL_OR_WAR or "TERROR" in themes:
         return None
     for cat, codes in THEME_CATEGORIES:
-        if themes & codes:
+        if cat in {"Cyber Crime", "Domestic Violence"}:
+            continue  # too broad without a headline
+        if themes & codes and themes & CRIME_CONTEXT:
             return cat
-    if "KILL" in themes and themes & CRIME_CONTEXT:
+    if {"KILL", "ARREST", "TAX_FNCACT_POLICE"} <= themes and "SOC_GENERALCRIME" in themes:
         return "Murder"
     return None
 
@@ -198,13 +268,11 @@ def parse_rows(rows: Iterable[list[str]], origin: str = "news") -> Iterator[Inci
         m = _TITLE.search(r[C_EXTRAS]) if len(r) > C_EXTRAS else None
         title = unescape(m.group(1)).strip() if m else None
         title = re.sub(r"\s+", " ", title)[:200] if title else None
-        cat = categorize(title if origin == "news" else None, themes) if title or themes else None
-        if origin != "news" and cat is None:
-            cat = categorize(None, themes)
-        if not cat:
-            continue
         url = r[C_URL]
-        if not url.startswith("http"):
+        if not url.startswith("http") or not indian_outlet(r[C_SOURCE] or urlparse(url).netloc):
+            continue
+        cat = categorize(title, themes, english=(origin == "news"))
+        if not cat:
             continue
         place, state, lat, lon, precision = loc
         show_title = title if cat not in PRIVATE_CATEGORIES and not (title and CHILD.search(title)
