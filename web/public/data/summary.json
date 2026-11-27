@@ -1,20 +1,20 @@
 {
- "generated_at": "2026-11-27T05:21:01Z",
- "total": 494,
- "last_24h": 231,
- "states_last_24h": 23,
+ "generated_at": "2026-11-27T05:23:50Z",
+ "total": 482,
+ "last_24h": 222,
+ "states_last_24h": 22,
  "by_category": [
   [
    "Murder",
-   161
+   154
   ],
   [
    "Assault",
-   71
+   69
   ],
   [
    "Sexual violence",
-   57
+   56
   ],
   [
    "Fraud",
@@ -38,18 +38,18 @@
   ],
   [
    "Kidnapping",
-   20
+   19
   ],
   [
    "Snatching",
    7
   ],
   [
-   "Domestic Violence",
-   5
+   "Burglary",
+   4
   ],
   [
-   "Burglary",
+   "Domestic Violence",
    4
   ],
   [
@@ -68,19 +68,19 @@
  "by_category_24h": [
   [
    "Murder",
-   77
+   73
   ],
   [
    "Assault",
-   33
-  ],
-  [
-   "Sexual violence",
-   25
+   31
   ],
   [
    "Fraud",
    25
+  ],
+  [
+   "Sexual violence",
+   24
   ],
   [
    "Robbery",
@@ -100,7 +100,7 @@
   ],
   [
    "Kidnapping",
-   7
+   6
   ],
   [
    "Burglary",
@@ -113,24 +113,20 @@
   [
    "Other crime",
    2
-  ],
-  [
-   "Domestic Violence",
-   1
   ]
  ],
  "by_state": [
   [
    "Delhi",
-   90
+   89
   ],
   [
    "Maharashtra",
-   77
+   74
   ],
   [
    "Uttar Pradesh",
-   51
+   49
   ],
   [
    "Madhya Pradesh",
@@ -138,23 +134,23 @@
   ],
   [
    "Karnataka",
-   28
+   27
   ],
   [
    "Gujarat",
-   24
+   23
   ],
   [
    "Haryana",
    21
   ],
   [
-   "Tamil Nadu",
+   "Chhattisgarh",
    20
   ],
   [
-   "Chhattisgarh",
-   20
+   "Tamil Nadu",
+   19
   ],
   [
    "Assam",
@@ -166,7 +162,7 @@
   ],
   [
    "Kerala",
-   17
+   16
   ],
   [
    "Rajasthan",
@@ -186,7 +182,7 @@
   ],
   [
    "Punjab",
-   10
+   9
   ],
   [
    "Jharkhand",
@@ -206,10 +202,6 @@
   ],
   [
    "Tripura",
-   1
-  ],
-  [
-   "Himachal Pradesh",
    1
   ],
   [
@@ -236,11 +228,11 @@
   ],
   [
    "Mumbai, Maharashtra",
-   28
+   27
   ],
   [
    "Pune, Maharashtra",
-   28
+   27
   ],
   [
    "Bengaluru, Karnataka",
@@ -248,7 +240,7 @@
   ],
   [
    "New Delhi, Delhi",
-   17
+   16
   ],
   [
    "Bhopal, Madhya Pradesh",
@@ -257,10 +249,6 @@
   [
    "Guwahati, Assam",
    10
-  ],
-  [
-   "Surat, Gujarat",
-   9
   ],
   [
    "Indore, Madhya Pradesh",
@@ -273,6 +261,10 @@
   [
    "Hyderabad, Telangana",
    9
+  ],
+  [
+   "Surat, Gujarat",
+   8
   ],
   [
    "Uttar Pradesh",
@@ -341,14 +333,14 @@
    "Fraud": 25,
    "Robbery": 9,
    "Cyber Crime": 17,
-   "Murder": 72,
+   "Murder": 69,
    "Burglary": 1,
    "Theft": 10,
    "Arms Act": 3,
    "Domestic Violence": 3,
    "Snatching": 5,
    "Gambling": 1,
-   "total": 234
+   "total": 231
   },
   {
    "day": "2026-11-26",
@@ -357,38 +349,38 @@
    "Fraud": 21,
    "Theft": 15,
    "Assault": 32,
-   "Murder": 72,
+   "Murder": 69,
    "Kidnapping": 7,
    "Cyber Crime": 15,
    "Drug Offense": 10,
    "Burglary": 3,
    "Snatching": 2,
    "Other crime": 2,
-   "Domestic Violence": 2,
-   "total": 217
+   "Domestic Violence": 1,
+   "total": 213
   },
   {
    "day": "2026-11-27",
    "Robbery": 2,
-   "Murder": 17,
-   "Assault": 5,
-   "Kidnapping": 2,
-   "Sexual violence": 7,
+   "Murder": 16,
+   "Assault": 3,
    "Cyber Crime": 2,
    "Fraud": 6,
+   "Sexual violence": 6,
    "Theft": 1,
    "Drug Offense": 1,
-   "total": 43
+   "Kidnapping": 1,
+   "total": 38
   }
  ],
  "by_origin": [
   [
    "news",
-   359
+   352
   ],
   [
    "news-translated",
-   117
+   112
   ],
   [
    "police",
