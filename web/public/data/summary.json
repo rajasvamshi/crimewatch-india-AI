@@ -1,12 +1,413 @@
 {
- "generated_at": "2026-11-27T05:08:50Z",
- "total": 0,
- "last_24h": 0,
- "states_last_24h": 0,
- "by_category": [],
- "by_category_24h": [],
- "by_state": [],
- "by_place": [],
- "by_day": [],
- "by_origin": []
+ "generated_at": "2026-11-27T05:09:47Z",
+ "total": 1864,
+ "last_24h": 890,
+ "states_last_24h": 28,
+ "by_category": [
+  [
+   "Murder",
+   764
+  ],
+  [
+   "Drug Offense",
+   216
+  ],
+  [
+   "Sexual violence",
+   176
+  ],
+  [
+   "Assault",
+   161
+  ],
+  [
+   "Cyber Crime",
+   159
+  ],
+  [
+   "Fraud",
+   129
+  ],
+  [
+   "Kidnapping",
+   94
+  ],
+  [
+   "Robbery",
+   92
+  ],
+  [
+   "Domestic Violence",
+   25
+  ],
+  [
+   "Theft",
+   25
+  ],
+  [
+   "Snatching",
+   8
+  ],
+  [
+   "Burglary",
+   6
+  ],
+  [
+   "Arson",
+   3
+  ],
+  [
+   "Arms Act",
+   3
+  ],
+  [
+   "Other crime",
+   2
+  ],
+  [
+   "Gambling",
+   1
+  ]
+ ],
+ "by_category_24h": [
+  [
+   "Murder",
+   362
+  ],
+  [
+   "Drug Offense",
+   88
+  ],
+  [
+   "Assault",
+   86
+  ],
+  [
+   "Cyber Crime",
+   76
+  ],
+  [
+   "Sexual violence",
+   73
+  ],
+  [
+   "Fraud",
+   73
+  ],
+  [
+   "Kidnapping",
+   50
+  ],
+  [
+   "Robbery",
+   43
+  ],
+  [
+   "Theft",
+   17
+  ],
+  [
+   "Domestic Violence",
+   15
+  ],
+  [
+   "Burglary",
+   3
+  ],
+  [
+   "Snatching",
+   2
+  ],
+  [
+   "Other crime",
+   2
+  ]
+ ],
+ "by_state": [
+  [
+   "Delhi",
+   314
+  ],
+  [
+   "Maharashtra",
+   237
+  ],
+  [
+   "Uttar Pradesh",
+   127
+  ],
+  [
+   "Kerala",
+   115
+  ],
+  [
+   "Gujarat",
+   112
+  ],
+  [
+   "Karnataka",
+   108
+  ],
+  [
+   "Madhya Pradesh",
+   103
+  ],
+  [
+   "Andhra Pradesh",
+   96
+  ],
+  [
+   "Tamil Nadu",
+   89
+  ],
+  [
+   "Bihar",
+   75
+  ],
+  [
+   "West Bengal",
+   59
+  ],
+  [
+   "Orissa",
+   56
+  ],
+  [
+   "India (General)",
+   53
+  ],
+  [
+   "Rajasthan",
+   48
+  ],
+  [
+   "Assam",
+   45
+  ],
+  [
+   "Haryana",
+   45
+  ],
+  [
+   "Punjab",
+   34
+  ],
+  [
+   "Chhattisgarh",
+   33
+  ],
+  [
+   "Jammu And Kashmir",
+   30
+  ],
+  [
+   "Uttaranchal",
+   29
+  ],
+  [
+   "Jharkhand",
+   26
+  ],
+  [
+   "Nagaland",
+   8
+  ],
+  [
+   "Goa",
+   6
+  ],
+  [
+   "Himachal Pradesh",
+   5
+  ],
+  [
+   "Meghalaya",
+   4
+  ],
+  [
+   "Manipur",
+   2
+  ],
+  [
+   "Daman And Diu",
+   2
+  ],
+  [
+   "Andaman And Nicobar Islands",
+   2
+  ],
+  [
+   "Tripura",
+   1
+  ]
+ ],
+ "by_place": [
+  [
+   "Delhi, Delhi",
+   157
+  ],
+  [
+   "New Delhi, Delhi",
+   134
+  ],
+  [
+   "Mumbai, Maharashtra",
+   122
+  ],
+  [
+   "Pune, Maharashtra",
+   57
+  ],
+  [
+   "Hyderabad, Andhra Pradesh",
+   53
+  ],
+  [
+   "Patna, Bihar",
+   37
+  ],
+  [
+   "Bengaluru, Karnataka",
+   37
+  ],
+  [
+   "Surat, Gujarat",
+   36
+  ],
+  [
+   "Hindustan, India (General)",
+   35
+  ],
+  [
+   "Kerala, Kerala",
+   31
+  ],
+  [
+   "Guwahati, Assam",
+   26
+  ],
+  [
+   "Indore, Madhya Pradesh",
+   26
+  ],
+  [
+   "Bhopal, Madhya Pradesh",
+   24
+  ],
+  [
+   "Madras, Tamil Nadu",
+   23
+  ],
+  [
+   "Bihar, Bihar",
+   21
+  ],
+  [
+   "Tamil Nadu, Tamil Nadu",
+   21
+  ],
+  [
+   "Jammu, Jammu And Kashmir",
+   21
+  ],
+  [
+   "Karnataka, Karnataka",
+   20
+  ],
+  [
+   "Haryana, Haryana",
+   20
+  ],
+  [
+   "Bangalore, Karnataka",
+   19
+  ],
+  [
+   "Uttar Pradesh, Uttar Pradesh",
+   19
+  ],
+  [
+   "Rajkot, Gujarat",
+   19
+  ],
+  [
+   "Lucknow, Uttar Pradesh",
+   19
+  ],
+  [
+   "Ghaziabad, Uttar Pradesh",
+   18
+  ],
+  [
+   "Madhya Pradesh, Madhya Pradesh",
+   18
+  ]
+ ],
+ "by_day": [
+  {
+   "day": "2026-11-25",
+   "Sexual violence": 89,
+   "Assault": 61,
+   "Murder": 343,
+   "Drug Offense": 108,
+   "Kidnapping": 41,
+   "Fraud": 54,
+   "Robbery": 46,
+   "Cyber Crime": 77,
+   "Domestic Violence": 8,
+   "Burglary": 3,
+   "Theft": 8,
+   "Arson": 2,
+   "Arms Act": 3,
+   "Snatching": 6,
+   "Gambling": 1,
+   "total": 850
+  },
+  {
+   "day": "2026-11-26",
+   "Fraud": 64,
+   "Cyber Crime": 76,
+   "Murder": 373,
+   "Sexual violence": 72,
+   "Drug Offense": 92,
+   "Theft": 15,
+   "Kidnapping": 42,
+   "Assault": 97,
+   "Domestic Violence": 16,
+   "Robbery": 43,
+   "Burglary": 3,
+   "Snatching": 2,
+   "Other crime": 2,
+   "Arson": 1,
+   "total": 898
+  },
+  {
+   "day": "2026-11-27",
+   "Murder": 48,
+   "Robbery": 3,
+   "Domestic Violence": 1,
+   "Cyber Crime": 6,
+   "Drug Offense": 16,
+   "Kidnapping": 11,
+   "Sexual violence": 15,
+   "Fraud": 11,
+   "Theft": 2,
+   "Assault": 3,
+   "total": 116
+  }
+ ],
+ "by_origin": [
+  [
+   "news",
+   1259
+  ],
+  [
+   "news-translated",
+   586
+  ],
+  [
+   "police",
+   19
+  ]
+ ]
 }
