@@ -61,15 +61,17 @@ function style() {
   };
 }
 
-export default function MapView({ layers, view = INDIA_VIEW, interactive = true, spin = false, onReady, flyTo }) {
+export default function MapView({ layers, view = INDIA_VIEW, interactive = true, spin = false, intro = false, onReady, flyTo, onMove }) {
   const el = useRef(null);
   const mapRef = useRef(null);
   const overlayRef = useRef(null);
   const [tilesFailed, setTilesFailed] = useState(false);
 
   useEffect(() => {
+    const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const start = intro && !still ? { center: view.center, zoom: 2.4, pitch: 0, bearing: 0 } : view;
     const map = new maplibregl.Map({
-      container: el.current, style: style(), ...view, interactive, attributionControl: { compact: true },
+      container: el.current, style: style(), ...start, interactive, attributionControl: { compact: true },
       maxPitch: 75, antialias: true,
     });
     mapRef.current = map;
@@ -81,19 +83,32 @@ export default function MapView({ layers, view = INDIA_VIEW, interactive = true,
     map.addControl(overlay);
     overlayRef.current = overlay;
     let raf;
-    if (spin) {
+    const spinNow = () => {
+      if (!spin || still) return;
       const step = () => { map.setBearing(map.getBearing() + 0.03); raf = requestAnimationFrame(step); };
-      map.once('load', step);
-    }
+      step();
+    };
+    let started = false;
+    const begin = () => {
+      if (started) return;
+      started = true;
+      if (start !== view) {
+        map.flyTo({ ...view, duration: 4200, curve: 1.6, essential: true });
+        map.once('moveend', spinNow);
+      } else spinNow();
+    };
+    map.once('load', begin);
+    const fallback = setTimeout(begin, 2500); // the base map may be slow or blocked; animate anyway
+    if (onMove) map.on('moveend', () => onMove(map));
     onReady?.(map);
-    return () => { cancelAnimationFrame(raf); map.remove(); };
+    return () => { cancelAnimationFrame(raf); clearTimeout(fallback); map.remove(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => { overlayRef.current?.setProps({ layers }); }, [layers]);
 
   useEffect(() => {
-    if (flyTo && mapRef.current) mapRef.current.flyTo({ ...flyTo, speed: 0.9, curve: 1.5, essential: true });
+    if (flyTo && mapRef.current) mapRef.current.flyTo({ duration: 2600, curve: 1.5, ...flyTo, essential: true });
   }, [flyTo]);
 
   return (
