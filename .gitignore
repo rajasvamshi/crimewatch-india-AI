@@ -48,3 +48,7 @@ config/users.json
 # Live feed database and partner API keys
 data/live/
 config/api_keys.json
+
+# Website
+web/node_modules/
+web/dist/
