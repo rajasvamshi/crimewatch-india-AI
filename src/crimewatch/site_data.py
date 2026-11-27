@@ -61,7 +61,9 @@ def delhi_incidents(days: int) -> list[dict]:
         if cat in NOT_CRIME:
             continue
         lat, lon = DELHI_DISTRICTS.get(r.district or "Unspecified", DELHI_DISTRICTS["Unspecified"])
-        place = f"{r.police_station + ', ' if r.police_station else ''}{r.district or 'Delhi'} district, Delhi"
+        ps = (r.police_station or "").strip(" -")
+        ps = ps.upper() if ps.lower() in {"aats", "ans", "sos"} else ps  # unit abbreviations
+        place = f"{ps + ', ' if ps else ''}{r.district or 'Delhi'} district, Delhi"
         out.append({
             "id": "dp-" + gdelt_feed.hashlib.sha256(r.url.encode()).hexdigest()[:13],
             "ts": f"{r.day.isoformat()}T12:00:00Z",

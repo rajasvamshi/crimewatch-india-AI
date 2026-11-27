@@ -70,7 +70,8 @@ EXTRA_RULES: list[tuple[str, re.Pattern]] = [
 NOT_INCIDENT = re.compile(
     r"\b(film|movie|web series|trailer|box office|review|cricket|ipl|match|election|poll|budget|"
     r"opinion|editorial|explained|quiz|horoscope|stock|shares?|sensex|nifty|recruit\w*|"
-    r"accidents?|collision|crash\w*|rams?|rammed|mishap|drown\w*|electrocut\w*|stampede|landslide|"
+    r"accidents?|collision|plunge\w*|plough\w*|speeding|overturn\w*|skid\w*|derail\w*|capsiz\w*|"
+    r"hit by|animals?|crash\w*|rams?|rammed|mishap|drown\w*|electrocut\w*|stampede|landslide|"
     r"flood\w*|blaze|fire broke|terror\w*|naxal\w*|maoist\w*|militant\w*|insurgen\w*|"
     r"anti-terror|26/11|outage|tiger|leopard|elephant|"
     # medicines, not narcotics
@@ -90,7 +91,7 @@ NARCOTIC = re.compile(r"\b(ndps|narcotic\w*|ganja|heroin|smack|cocaine|mdma|char
 # Court and follow-up stories (bail, verdicts, chargesheets): the incident itself was reported earlier.
 # An attack that happens *at* a court is still a new incident.
 COURT = re.compile(r"\b(bail|convict\w*|acquit\w*|verdict|sentenc\w*|life imprisonment|chargesheet\w*|"
-                   r"charge ?sheet|court|hc|high court|supreme court|hearing|plea|petition|tribunal)\b|"
+                   r"charge ?sheet|life term|court|hc|high court|supreme court|hearing|plea|petition|tribunal)\b|"
                    r"(अदालत|कोर्ट|जमानत|सजा|फैसला)", re.I)
 AT_COURT = re.compile(r"\b(outside|near|at)\b[^|:]{0,40}\bcourt\b|\bcourt (attack|firing)\b|"
                       r"(कोर्ट के बाहर|कोर्टाबाहेर)", re.I)
